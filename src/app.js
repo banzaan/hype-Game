@@ -101,6 +101,13 @@ function setup() {
     });
     app.stage.addChildAt(resetBtn, app.stage.children.length);
 
+    window.addEventListener("pointerdown", (e) => {
+        if (dino.dead && speed === 0) {
+            reset();
+        } else if (!dino.dead) {
+            dino.jump();
+        }
+    });
     let space = keyboard(32);
     space.press = () => dino.jump();
 
