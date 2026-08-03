@@ -81,7 +81,7 @@ function setup() {
     obstacle = new ObstacleManager();
 
     let style = new PIXI.TextStyle({ fill: "white", fontSize: 50, fontFamily: "Fredoka One" });
-    score = new PIXI.Text(dist + " m", style);
+    score = new PIXI.Text(dist + " usdc", style);
     score.anchor.set(1, 0);
     score.position.set(app.renderer.width - 20, 10);
     app.stage.addChildAt(score, app.stage.children.length);
@@ -125,7 +125,7 @@ function gameLoop(delta) {
     if (!dino.dead && !restarting) {
         dist += 0.05 * delta * speed;
         if (Math.floor(dist) % 5 === 0) {
-            score.text = Math.floor(dist) + " m";
+            score.text = Math.floor(dist) + " usdc";
         }
     }
     if (dino.dead && speed === 0) {
