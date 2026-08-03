@@ -28,21 +28,25 @@ class ObstacleManager {
     createNewsContainer(message) {
         const container = new PIXI.Container();
 
+         const isMobile = app.renderer.width < 768;
+        const boxWidth = isMobile ? Math.min(app.renderer.width * 0.8, 300) : 380; 
+        const fontSize = isMobile ? 14 : 22;
+
         const text = new PIXI.Text(message, {
             fontFamily: 'Arial',
-            fontSize: 26,
+            fontSize: fontSize,
             fill: 0xffffff,
             fontWeight: 'bold',
             wordWrap: true,
-            wordWrapWidth: 380, 
+            wordWrapWidth: boxWidth - 30, 
             align: 'center'
         });
-        text.x = 20;
-        text.y = 18;
+        text.x = 15;
+        text.y = 12;
 
         const bg = new PIXI.Graphics();
-        bg.beginFill(0x000000, 0.8); 
-        bg.drawRoundedRect(0, 0, 420, text.height + 36, 16);
+        bg.beginFill(0x000000, 0.75); 
+        bg.drawRoundedRect(0, 0, boxWidth, text.height + 24, 12);
         bg.endFill();
 
         container.addChild(bg);
@@ -58,7 +62,6 @@ class ObstacleManager {
             
             if (data && data.items && data.items.length > 0) {
                 this.newsList = data.items.map(item => "⚠️ " + item.title);
-                console.log("");
             }
         } catch (error) {
             console.log("", error);
@@ -69,9 +72,7 @@ class ObstacleManager {
         this.obstacles.position.x -= 3.2 * speed;
 
         const cactusGlobalX = this.obstacles.x;
-
-      
-        if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead) {
+if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead) {
             const randomNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
             
             if (this.activeNewsBox) {
@@ -79,16 +80,16 @@ class ObstacleManager {
                 this.activeNewsBox.destroy();
             }
 
-            
             this.activeNewsBox = this.createNewsContainer(randomNews);
-            this.activeNewsBox.x = (app.renderer.width - 420) / 2; 
-            this.activeNewsBox.y = 50; 
+            
+            this.activeNewsBox.x = (app.renderer.width - this.activeNewsBox.width) / 2; 
+            this.activeNewsBox.y = 30; 
             
             app.stage.addChild(this.activeNewsBox);
             this.hasShownNews = true;
         }
 
-        
+      
         if ((cactusGlobalX < -50 || dino.dead) && this.activeNewsBox) {
             app.stage.removeChild(this.activeNewsBox);
             this.activeNewsBox.destroy();
