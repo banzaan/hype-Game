@@ -1,8 +1,9 @@
 class ObstacleManager {
     constructor() {
         this.obstacles = new PIXI.Container();
-        this.newsLayer = new PIXI.Container();
         this.newsList = ["fiat :)"];
+        this.activeNewsBox = null; 
+        this.hasShownNews = false; 
 
         for (let i = 0; i < 1; i++) {
             const obstacleItem = new PIXI.Container();
@@ -14,22 +15,12 @@ class ObstacleManager {
 
             obstacleItem.x = i * 220;
             this.obstacles.addChild(obstacleItem);
-
-            const textContainer = this.createNewsContainer(this.newsList[0]);
-            textContainer.name = "newsBox";
-            textContainer.x = obstacleItem.x - 380; 
-            textContainer.y = -cactus.height - 180; 
-            this.newsLayer.addChild(textContainer);
         }
 
         this.obstacles.y = app.renderer.height;
         this.obstacles.x = app.renderer.width * 3;
-        
-        this.newsLayer.y = app.renderer.height;
-        this.newsLayer.x = this.obstacles.x;
 
         app.stage.addChildAt(this.obstacles, app.stage.children.length - 2);
-        app.stage.addChildAt(this.newsLayer, app.stage.children.length - 2);
 
         this.fetchDynamicNews();
     }
@@ -37,10 +28,9 @@ class ObstacleManager {
     createNewsContainer(message) {
         const container = new PIXI.Container();
 
-
         const text = new PIXI.Text(message, {
             fontFamily: 'Arial',
-            fontSize: 30,
+            fontSize: 26,
             fill: 0xffffff,
             fontWeight: 'bold',
             wordWrap: true,
@@ -50,10 +40,8 @@ class ObstacleManager {
         text.x = 20;
         text.y = 18;
 
-
         const bg = new PIXI.Graphics();
-        bg.beginFill(0x000000, 0.7); 
-        //bg.lineStyle(2.5, 0x000000, 0.8); 
+        bg.beginFill(0x000000, 0.8); 
         bg.drawRoundedRect(0, 0, 420, text.height + 36, 16);
         bg.endFill();
 
@@ -78,28 +66,48 @@ class ObstacleManager {
     }
 
     update() {
-        this.obstacles.position.x -= 2.9 * speed;
-        this.newsLayer.position.x = this.obstacles.position.x;
+        this.obstacles.position.x -= 3.2 * speed;
 
-        if (this.obstacles.x <= -this.obstacles.width) {
-            for (let i = 0; i < this.newsLayer.children.length; i++) {
-                const randomNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
-                const newsBox = this.newsLayer.children[i];
-                
-                newsBox.removeChildren();
-                const newBox = this.createNewsContainer(randomNews);
-                while(newBox.children.length > 0) {
-                    newsBox.addChild(newBox.children[0]);
-                }
+        const cactusGlobalX = this.obstacles.x;
+
+      
+        if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead) {
+            const randomNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
+            
+            if (this.activeNewsBox) {
+                app.stage.removeChild(this.activeNewsBox);
+                this.activeNewsBox.destroy();
             }
 
+            
+            this.activeNewsBox = this.createNewsContainer(randomNews);
+            this.activeNewsBox.x = (app.renderer.width - 420) / 2; 
+            this.activeNewsBox.y = 50; 
+            
+            app.stage.addChild(this.activeNewsBox);
+            this.hasShownNews = true;
+        }
+
+        
+        if ((cactusGlobalX < -50 || dino.dead) && this.activeNewsBox) {
+            app.stage.removeChild(this.activeNewsBox);
+            this.activeNewsBox.destroy();
+            this.activeNewsBox = null;
+        }
+
+        if (this.obstacles.x <= -this.obstacles.width) {
             this.obstacles.x = app.renderer.width + speed * 100 + Math.random() * 200 * speed;
             this.obstacles.y = app.renderer.height;
-            this.newsLayer.x = this.obstacles.x;
+            this.hasShownNews = false; 
 
             if (restarting) {
                 this.obstacles.x = app.renderer.width * 3;
-                this.newsLayer.x = this.obstacles.x;
+                this.hasShownNews = false;
+                if (this.activeNewsBox) {
+                    app.stage.removeChild(this.activeNewsBox);
+                    this.activeNewsBox.destroy();
+                    this.activeNewsBox = null;
+                }
                 dino.dino.destroy();
                 dino = new Dino();
             }
