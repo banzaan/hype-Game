@@ -69,7 +69,7 @@ class ObstacleManager {
     }
 
     update() {
-        this.obstacles.position.x -= 3.2 * speed;
+        this.obstacles.position.x -= 5.5 * speed;
 
         const cactusGlobalX = this.obstacles.x;
 if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead) {
