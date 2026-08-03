@@ -7,7 +7,22 @@
     <link rel="stylesheet" href="src/style/style.css">
     <link rel="stylesheet" href="src/style/loader.css">
     <script type="text/javascript" src="src/lib/pixi.min.js"></script>
+    <style>
+      @media screen and (orientation: portrait) {
+        body {
+          transform: rotate(90deg);
+          transform-origin: left top;
+          width: 100vh;
+          height: 100vw;
+          overflow: hidden;
+          position: absolute;
+          top: 100%;
+          left: 0;
+        }
+      }
+    </style>
   </head>
+  
   <body>
     <script type="text/javascript" src="src/app.js"></script>
     <script type="text/javascript" src="src/dino.js"></script>
