@@ -1,0 +1,12 @@
+{
+    "name": "hype-game",
+    "private": true,
+    "version": "1.0.0",
+    "description": "T-Rex Runner Game",
+    "scripts": {
+      "start": "npx serve ."
+    },
+    "dependencies": {
+      "serve": "^14.2.1"
+    }
+  }
