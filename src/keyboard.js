@@ -31,5 +31,10 @@ function keyboard(keyCode) {
         "keyup", key.upHandler.bind(key), false
     );
 
+
+    window.addEventListener("touchstart", () => {
+        if (key.isUp && key.press) key.press();
+    }, false);
+
     return key;
 }
