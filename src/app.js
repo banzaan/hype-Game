@@ -1,7 +1,4 @@
 let app = new PIXI.Application({ roundPixels: true, antialias: false });
-window.addEventListener('resize', () => {
-    app.renderer.resize(window.innerWidth, window.innerHeight);
-});
 app.renderer.view.style.position = "absolute";
 app.renderer.view.style.display = "block";
 app.renderer.autoResize = true;
