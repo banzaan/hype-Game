@@ -90,25 +90,28 @@ function setup() {
     score.position.set(app.renderer.width - 20, 10);
     app.stage.addChildAt(score, app.stage.children.length);
 
+    let dynamicFontSize = Math.max(24, Math.floor(app.renderer.height * 0.045));
+
     let newsStyle = new PIXI.TextStyle({
         fill: "white",
-        fontSize: 38,
+        fontSize: dynamicFontSize,
         fontFamily: "Fredoka One",
         align: "center",
         dropShadow: true,
         dropShadowColor: "#000000",
-        dropShadowBlur: 6,
-        dropShadowDistance: 3,
+        dropShadowBlur: 8,
+        dropShadowDistance: 4,
         wordWrap: true,
-        wordWrapWidth: app.renderer.width * 0.6
+        wordWrapWidth: app.renderer.width * 0.75
     });
     
     newsTextObj = new PIXI.Text("", newsStyle);
     newsTextObj.anchor.set(0.5, 0);
-    newsTextObj.position.set(app.renderer.width / 2, 30);
+    newsTextObj.position.set(app.renderer.width / 2, app.renderer.height * 0.03);
     newsTextObj.interactive = false;
     newsTextObj.buttonMode = false;
     app.stage.addChild(newsTextObj);
+
 
     window.onNewsLoaded = function(items) {
         liveNewsList = items;
@@ -133,6 +136,7 @@ function setup() {
         resetBtn.hovering = false;
     });
     app.stage.addChildAt(resetBtn, app.stage.children.length);
+
 
     window.addEventListener("pointerdown", (e) => {
         if (dino.dead && speed === 0) {
@@ -171,6 +175,7 @@ function typeWriterEffect(text) {
         }
     }, speedInterval);
 }
+
 
 window.triggerNextNews = function(title, url) {
     if (dino && dino.dead) return;
