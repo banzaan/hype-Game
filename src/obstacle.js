@@ -1,26 +1,19 @@
 class ObstacleManager {
     constructor() {
         this.obstacles = new PIXI.Container();
-        this.newsList = [
-            { title: "FOMO in the SOC: Where AI Platforms like Claude Actually Fit", url: "https://thehackernews.com" }
-        ];
+        this.newsList = [];
         this.hasShownNews = false; 
 
-        for (let i = 0; i < 1; i++) {
-            const obstacleItem = new PIXI.Container();
-
+        for (let i = 0; i < 3; i++) {
             const cactus = new PIXI.Sprite(sheet.textures["cactus.png"]);
-            cactus.scale.set(Math.random() * 0.1 + 0.25);
+            cactus.scale.set(Math.random() * 0.12 + 0.35);
             cactus.y = -cactus.height;
-            obstacleItem.addChild(cactus);
-
-            obstacleItem.x = i * 220;
-            this.obstacles.addChild(obstacleItem);
+            cactus.x = i * 80;
+            this.obstacles.addChild(cactus);
         }
 
         this.obstacles.y = app.renderer.height;
         this.obstacles.x = app.renderer.width * 3;
-
         app.stage.addChildAt(this.obstacles, app.stage.children.length - 2);
 
         this.fetchDynamicNews();
@@ -47,19 +40,21 @@ class ObstacleManager {
 
         const cactusGlobalX = this.obstacles.x;
 
-
         if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead) {
-            const randomNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
-            
-
-            if (typeof window.triggerNextNews === 'function') {
-                window.triggerNextNews(randomNews.title, randomNews.url);
+            if (this.newsList.length > 0) {
+                const randomNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
+                if (typeof window.triggerNextNews === 'function') {
+                    window.triggerNextNews(randomNews.title, randomNews.url);
+                }
             }
-
             this.hasShownNews = true;
         }
 
         if (this.obstacles.x <= -this.obstacles.width) {
+            for (let obstacle of this.obstacles.children) {
+                obstacle.scale.set(Math.random() * 0.12 + 0.35);
+                obstacle.y = -obstacle.height;
+            }
             this.obstacles.x = app.renderer.width + speed * 100 + Math.random() * 200 * speed;
             this.obstacles.y = app.renderer.height;
             this.hasShownNews = false; 
