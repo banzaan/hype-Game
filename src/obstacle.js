@@ -1,8 +1,9 @@
 class ObstacleManager {
     constructor() {
         this.obstacles = new PIXI.Container();
-        this.newsList = ["fiat :)"];
-        this.activeNewsBox = null; 
+        this.newsList = [
+            { title: "FOMO in the SOC: Where AI Platforms like Claude Actually Fit", url: "https://thehackernews.com" }
+        ];
         this.hasShownNews = false; 
 
         for (let i = 0; i < 1; i++) {
@@ -25,46 +26,19 @@ class ObstacleManager {
         this.fetchDynamicNews();
     }
 
-    createNewsContainer(message) {
-        const container = new PIXI.Container();
-
-         const isMobile = app.renderer.width < 768;
-        const boxWidth = isMobile ? Math.min(app.renderer.width * 0.8, 300) : 380; 
-        const fontSize = isMobile ? 14 : 22;
-
-        const text = new PIXI.Text(message, {
-            fontFamily: 'Arial',
-            fontSize: fontSize,
-            fill: 0xffffff,
-            fontWeight: 'bold',
-            wordWrap: true,
-            wordWrapWidth: boxWidth - 30, 
-            align: 'center'
-        });
-        text.x = 15;
-        text.y = 12;
-
-        const bg = new PIXI.Graphics();
-        bg.beginFill(0x000000, 0.75); 
-        bg.drawRoundedRect(0, 0, boxWidth, text.height + 24, 12);
-        bg.endFill();
-
-        container.addChild(bg);
-        container.addChild(text);
-
-        return container;
-    }
-
     async fetchDynamicNews() {
         try {
             const response = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://thehackernews.com/rss.xml');
             const data = await response.json();
             
             if (data && data.items && data.items.length > 0) {
-                this.newsList = data.items.map(item => "⚠️ " + item.title);
+                this.newsList = data.items.map(item => ({
+                    title: "⚠️ " + item.title,
+                    url: item.link
+                }));
             }
         } catch (error) {
-            console.log("", error);
+            console.log("Error fetching news:", error);
         }
     }
 
@@ -72,28 +46,17 @@ class ObstacleManager {
         this.obstacles.position.x -= 5.5 * speed;
 
         const cactusGlobalX = this.obstacles.x;
-if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead) {
+
+
+        if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead) {
             const randomNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
             
-            if (this.activeNewsBox) {
-                app.stage.removeChild(this.activeNewsBox);
-                this.activeNewsBox.destroy();
+
+            if (typeof window.triggerNextNews === 'function') {
+                window.triggerNextNews(randomNews.title, randomNews.url);
             }
 
-            this.activeNewsBox = this.createNewsContainer(randomNews);
-            
-            this.activeNewsBox.x = (app.renderer.width - this.activeNewsBox.width) / 2; 
-            this.activeNewsBox.y = 30; 
-            
-            app.stage.addChild(this.activeNewsBox);
             this.hasShownNews = true;
-        }
-
-      
-        if ((cactusGlobalX < -50 || dino.dead) && this.activeNewsBox) {
-            app.stage.removeChild(this.activeNewsBox);
-            this.activeNewsBox.destroy();
-            this.activeNewsBox = null;
         }
 
         if (this.obstacles.x <= -this.obstacles.width) {
@@ -104,11 +67,6 @@ if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead
             if (restarting) {
                 this.obstacles.x = app.renderer.width * 3;
                 this.hasShownNews = false;
-                if (this.activeNewsBox) {
-                    app.stage.removeChild(this.activeNewsBox);
-                    this.activeNewsBox.destroy();
-                    this.activeNewsBox = null;
-                }
                 dino.dino.destroy();
                 dino = new Dino();
             }
