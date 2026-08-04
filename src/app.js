@@ -17,6 +17,12 @@ let speed;
 let dist;
 let restarting = false;
 
+let newsTextObj;
+let liveNewsList = []; 
+let typingTimer = null;
+let fullCurrentNewsText = "";
+let currentActiveNewsUrl = "";
+
 const TICK_RATE = 16;
 let lastUpdate = 0;
 
@@ -26,7 +32,6 @@ window.WebFontConfig = {
     }
 };
 
-// include the web-font loader script
 /* jshint ignore:start */
 (function () {
     var wf = document.createElement('script');
@@ -85,6 +90,36 @@ function setup() {
     score.position.set(app.renderer.width - 20, 10);
     app.stage.addChildAt(score, app.stage.children.length);
 
+    let newsStyle = new PIXI.TextStyle({
+        fill: "white",
+        fontSize: 38,
+        fontFamily: "Fredoka One",
+        align: "center",
+        dropShadow: true,
+        dropShadowColor: "#000000",
+        dropShadowBlur: 6,
+        dropShadowDistance: 3,
+        wordWrap: true,
+        wordWrapWidth: app.renderer.width * 0.6
+    });
+    
+    newsTextObj = new PIXI.Text("", newsStyle);
+    newsTextObj.anchor.set(0.5, 0);
+    newsTextObj.position.set(app.renderer.width / 2, 30);
+    newsTextObj.interactive = false;
+    newsTextObj.buttonMode = false;
+    app.stage.addChild(newsTextObj);
+
+    // دریافت اخبار زنده از API
+    window.onNewsLoaded = function(items) {
+        liveNewsList = items;
+        if (newsTextObj.text === "" && liveNewsList.length > 0) {
+            let firstNews = liveNewsList[Math.floor(Math.random() * liveNewsList.length)];
+            currentActiveNewsUrl = firstNews.url;
+            typeWriterEffect(firstNews.title);
+        }
+    };
+
     resetBtn = new PIXI.Sprite(sheet.textures["retry.png"]);
     resetBtn.anchor.set(0.5);
     resetBtn.position.set(app.renderer.width / 2, app.renderer.height + resetBtn.height * 2);
@@ -100,6 +135,7 @@ function setup() {
     });
     app.stage.addChildAt(resetBtn, app.stage.children.length);
 
+    // فقط پرش انجام می‌شود و دیگر خبر با پریدن عوض نمی‌شود
     window.addEventListener("pointerdown", (e) => {
         if (dino.dead && speed === 0) {
             reset();
@@ -108,15 +144,44 @@ function setup() {
         }
     });
     let space = keyboard(32);
-    space.press = () => dino.jump();
+    space.press = () => {
+        if (!dino.dead) {
+            dino.jump();
+        }
+    };
 
     dino = new Dino();
 
     app.ticker.add(delta => gameLoop(delta));
 }
 
-function gameLoop(delta) {
+function typeWriterEffect(text) {
+    if (typingTimer) {
+        clearInterval(typingTimer);
+    }
+    fullCurrentNewsText = text;
+    newsTextObj.text = "";
+    let charIndex = 0;
+    let speedInterval = Math.max(20, Math.floor(2000 / text.length));
 
+    typingTimer = setInterval(() => {
+        if (charIndex < text.length) {
+            newsTextObj.text += text.charAt(charIndex);
+            charIndex++;
+        } else {
+            clearInterval(typingTimer);
+        }
+    }, speedInterval);
+}
+
+// این تابع تنها زمانی که کاکتوس رد می‌شود خبر را عوض می‌کند
+window.triggerNextNews = function(title, url) {
+    if (dino && dino.dead) return;
+    currentActiveNewsUrl = url;
+    typeWriterEffect(title);
+};
+
+function gameLoop(delta) {
     let now = (new Date()).getTime();
     let timeDiff = now - lastUpdate;
     if (timeDiff < TICK_RATE)
@@ -128,6 +193,28 @@ function gameLoop(delta) {
     obstacle.update();
     scroller.update();
     dino.checkCollision(obstacle);
+
+    if (dino.dead && !newsTextObj.interactive && speed === 0) {
+        if (typingTimer) clearInterval(typingTimer);
+        if (fullCurrentNewsText !== "") {
+            newsTextObj.text = fullCurrentNewsText; 
+        }
+        newsTextObj.interactive = true;
+        newsTextObj.buttonMode = true;
+        
+        newsTextObj.removeAllListeners();
+        newsTextObj.on("click", () => {
+            if (currentActiveNewsUrl) {
+                window.open(currentActiveNewsUrl, "_blank");
+            }
+        });
+        newsTextObj.on("tap", () => {
+            if (currentActiveNewsUrl) {
+                window.open(currentActiveNewsUrl, "_blank");
+            }
+        });
+    }
+
     if (!dino.dead && !restarting) {
         dist += 0.05 * delta * speed;
         if (Math.floor(dist) % 5 === 0) {
@@ -145,7 +232,6 @@ function gameLoop(delta) {
             let scale = resetBtn.getBounds().width / resetBtn.getLocalBounds().width;
             scale = lerp(scale, 1, 0.1);
             resetBtn.scale.set(scale);
-
         }
     }
     if (restarting) {
@@ -160,6 +246,13 @@ function gameLoop(delta) {
 function reset() {
     restarting = true;
     dist = 0;
+    newsTextObj.interactive = false;
+    newsTextObj.buttonMode = false;
+    if (liveNewsList.length > 0) {
+        let firstNews = liveNewsList[Math.floor(Math.random() * liveNewsList.length)];
+        currentActiveNewsUrl = firstNews.url;
+        typeWriterEffect(firstNews.title);
+    }
 }
 
 function lerp(value1, value2, amount) {
