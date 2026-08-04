@@ -110,7 +110,6 @@ function setup() {
     newsTextObj.buttonMode = false;
     app.stage.addChild(newsTextObj);
 
-    // دریافت اخبار زنده از API
     window.onNewsLoaded = function(items) {
         liveNewsList = items;
         if (newsTextObj.text === "" && liveNewsList.length > 0) {
@@ -135,7 +134,6 @@ function setup() {
     });
     app.stage.addChildAt(resetBtn, app.stage.children.length);
 
-    // فقط پرش انجام می‌شود و دیگر خبر با پریدن عوض نمی‌شود
     window.addEventListener("pointerdown", (e) => {
         if (dino.dead && speed === 0) {
             reset();
@@ -174,7 +172,6 @@ function typeWriterEffect(text) {
     }, speedInterval);
 }
 
-// این تابع تنها زمانی که کاکتوس رد می‌شود خبر را عوض می‌کند
 window.triggerNextNews = function(title, url) {
     if (dino && dino.dead) return;
     currentActiveNewsUrl = url;
