@@ -93,12 +93,12 @@ function setup() {
     let dynamicFontSize = Math.max(20, Math.floor(app.renderer.height * 0.035));
 
     let newsStyle = new PIXI.TextStyle({
-        fill: "white",
+        fill: "#001f28",
         fontSize: dynamicFontSize,
         fontFamily: "Fredoka One",
         align: "center",
         dropShadow: true,
-        dropShadowColor: "#000000",
+        dropShadowColor: "#ffd4e3",
         dropShadowBlur: 2,
         dropShadowDistance: 2,
         wordWrap: true,
@@ -106,9 +106,9 @@ function setup() {
     });
     
     newsTextObj = new PIXI.Text("", newsStyle);
-    newsTextObj.anchor.set(0.5, 1);
+    newsTextObj.anchor.set(0.5, 0.5);
     // انتقال زیرنویس به بخش پایین صفحه (بالاتر از کف زمین)
-    newsTextObj.position.set(app.renderer.width / 2, app.renderer.height - 30);
+    newsTextObj.position.set(app.renderer.width / 2, app.renderer.height / 2);
     newsTextObj.interactive = false;
     newsTextObj.buttonMode = false;
     app.stage.addChild(newsTextObj);
