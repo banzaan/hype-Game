@@ -90,7 +90,7 @@ function setup() {
     score.position.set(app.renderer.width - 20, 10);
     app.stage.addChildAt(score, app.stage.children.length);
 
-    let dynamicFontSize = Math.max(24, Math.floor(app.renderer.height * 0.045));
+    let dynamicFontSize = Math.max(20, Math.floor(app.renderer.height * 0.035));
 
     let newsStyle = new PIXI.TextStyle({
         fill: "white",
@@ -99,15 +99,16 @@ function setup() {
         align: "center",
         dropShadow: true,
         dropShadowColor: "#000000",
-        dropShadowBlur: 8,
-        dropShadowDistance: 4,
+        dropShadowBlur: 2,
+        dropShadowDistance: 2,
         wordWrap: true,
-        wordWrapWidth: app.renderer.width * 0.75
+        wordWrapWidth: app.renderer.width * 0.8
     });
     
     newsTextObj = new PIXI.Text("", newsStyle);
-    newsTextObj.anchor.set(0.5, 0);
-    newsTextObj.position.set(app.renderer.width / 2, app.renderer.height * 0.03);
+    newsTextObj.anchor.set(0.5, 1);
+    // انتقال زیرنویس به بخش پایین صفحه (بالاتر از کف زمین)
+    newsTextObj.position.set(app.renderer.width / 2, app.renderer.height - 30);
     newsTextObj.interactive = false;
     newsTextObj.buttonMode = false;
     app.stage.addChild(newsTextObj);
@@ -123,6 +124,7 @@ function setup() {
     };
 
     resetBtn = new PIXI.Sprite(sheet.textures["retry.png"]);
+    resetBtn.scale.set(0.25);
     resetBtn.anchor.set(0.5);
     resetBtn.position.set(app.renderer.width / 2, app.renderer.height + resetBtn.height * 2);
     resetBtn.visible = false;
@@ -226,15 +228,10 @@ function gameLoop(delta) {
     if (dino.dead && speed === 0) {
         resetBtn.visible = true;
         resetBtn.y = lerp(resetBtn.y, app.renderer.height / 2, 0.1);
-        if (resetBtn.hovering) {
-            let scale = resetBtn.getBounds().width / resetBtn.getLocalBounds().width;
-            scale = lerp(scale, 1.1, 0.1);
-            resetBtn.scale.set(scale);
-        } else {
-            let scale = resetBtn.getBounds().width / resetBtn.getLocalBounds().width;
-            scale = lerp(scale, 1, 0.1);
-            resetBtn.scale.set(scale);
-        }
+        
+        let targetScale = resetBtn.hovering ? 0.3 : 0.25;
+        let newScale = lerp(resetBtn.scale.x, targetScale, 0.1);
+        resetBtn.scale.set(newScale);
     }
     if (restarting) {
         speed = lerp(speed, 5, 0.08);
