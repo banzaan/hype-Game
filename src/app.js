@@ -4,9 +4,7 @@ app.renderer.view.style.display = "block";
 app.renderer.autoResize = true;
 app.renderer.resize(window.innerWidth, window.innerHeight);
 app.view.id = "game-canvas";
-
 document.body.appendChild(app.view);
-
 let scroller;
 let dino;
 let obstacle;
@@ -16,16 +14,13 @@ let resetBtn;
 let speed;
 let dist;
 let restarting = false;
-
 let newsTextObj;
 let liveNewsList = []; 
 let typingTimer = null;
 let fullCurrentNewsText = "";
 let currentActiveNewsUrl = "";
-
 const TICK_RATE = 16;
 let lastUpdate = 0;
-
 window.WebFontConfig = {
     google: {
         families: ['Fredoka One']
@@ -143,13 +138,13 @@ function setup() {
 
 
     window.addEventListener("pointerdown", (e) => {
-        if (!dino.dead) {
+        if (dino && dino.shadowDino) {
             dino.jump();
         }
     });
     let space = keyboard(32);
     space.press = () => {
-        if (!dino.dead) {
+        if (dino && dino.shadowDino) {
             dino.jump();
         }
     };
@@ -180,7 +175,6 @@ function typeWriterEffect(text) {
 
 
 window.triggerNextNews = function(title, url) {
-    if (dino && dino.dead) return;
     currentActiveNewsUrl = url;
     typeWriterEffect(title);
 };
@@ -198,7 +192,8 @@ function gameLoop(delta) {
     scroller.update();
     dino.checkCollision(obstacle);
 
-    if (dino.dead && !newsTextObj.interactive && speed === 0) {
+
+    if (dino.dead && !newsTextObj.interactive) {
         if (typingTimer) clearInterval(typingTimer);
         if (fullCurrentNewsText !== "") {
             newsTextObj.text = fullCurrentNewsText; 
@@ -219,34 +214,39 @@ function gameLoop(delta) {
         });
     }
 
-    if (!dino.dead && !restarting) {
+
+    if (!restarting) {
         dist += 0.05 * delta * speed;
         if (Math.floor(dist) % 5 === 0) {
             score.text = Math.floor(dist) + " usdc";
         }
     }
-    if (dino.dead && speed === 0) {
+
+
+    if (dino.dead && !restarting) {
         resetBtn.visible = true;
-        resetBtn.y = lerp(resetBtn.y, app.renderer.height* 0.75, 0.1);
+        resetBtn.y = app.renderer.height * 0.65;
         
         let targetScale = resetBtn.hovering ? 0.3 : 0.25;
         let newScale = lerp(resetBtn.scale.x, targetScale, 0.1);
         resetBtn.scale.set(newScale);
     }
+
     if (restarting) {
         speed = lerp(speed, 5, 0.08);
         if (speed >= 3) {
             speed = 3;
         }
-        resetBtn.y = lerp(resetBtn.y, app.renderer.height + resetBtn.height * 2, 0.1);
     }
 }
 
 function reset() {
     restarting = true;
     dist = 0;
+    resetBtn.visible = false; 
     newsTextObj.interactive = false;
     newsTextObj.buttonMode = false;
+    
     if (liveNewsList.length > 0) {
         let firstNews = liveNewsList[Math.floor(Math.random() * liveNewsList.length)];
         currentActiveNewsUrl = firstNews.url;
