@@ -129,9 +129,12 @@ function setup() {
     resetBtn.visible = false;
     resetBtn.buttonMode = true;
     resetBtn.interactive = true;
-    resetBtn.on("click", reset);
+    resetBtn.on("pointerdown", reset);
     resetBtn.on("mouseover", function () {
         resetBtn.hovering = true;
+    });
+    resetBtn.on("pointerout", function () {
+        resetBtn.hovering = false;
     });
     resetBtn.on("mouseout", function () {
         resetBtn.hovering = false;
@@ -140,7 +143,7 @@ function setup() {
 
 
     window.addEventListener("pointerdown", (e) => {
-         if (!dino.dead) {
+        if (!dino.dead) {
             dino.jump();
         }
     });
