@@ -93,7 +93,7 @@ function setup() {
     let dynamicFontSize = Math.max(20, Math.floor(app.renderer.height * 0.035));
 
     let newsStyle = new PIXI.TextStyle({
-        fill: "#001f28",
+        fill: "#2D4A27",
         fontSize: dynamicFontSize,
         fontFamily: "Fredoka One",
         align: "center",
@@ -107,7 +107,6 @@ function setup() {
     
     newsTextObj = new PIXI.Text("", newsStyle);
     newsTextObj.anchor.set(0.5, 0.5);
-    // انتقال زیرنویس به بخش پایین صفحه (بالاتر از کف زمین)
     newsTextObj.position.set(app.renderer.width / 2, app.renderer.height / 2);
     newsTextObj.interactive = false;
     newsTextObj.buttonMode = false;
@@ -141,9 +140,7 @@ function setup() {
 
 
     window.addEventListener("pointerdown", (e) => {
-        if (dino.dead && speed === 0) {
-            reset();
-        } else if (!dino.dead) {
+         if (!dino.dead) {
             dino.jump();
         }
     });
@@ -227,7 +224,7 @@ function gameLoop(delta) {
     }
     if (dino.dead && speed === 0) {
         resetBtn.visible = true;
-        resetBtn.y = lerp(resetBtn.y, app.renderer.height / 2, 0.1);
+        resetBtn.y = lerp(resetBtn.y, app.renderer.height* 0.75, 0.1);
         
         let targetScale = resetBtn.hovering ? 0.3 : 0.25;
         let newScale = lerp(resetBtn.scale.x, targetScale, 0.1);
