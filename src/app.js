@@ -159,48 +159,21 @@ function addNewNewsLine(text, url) {
 
     const titleLower = cleanText.toLowerCase();
     
-    const aiKeywords = [
-        'chatgpt', 'openai', 'gemini', 'claude', 'anthropic', 'llama', 'meta ai', 
-        'copilot', 'midjourney', 'stable diffusion', 'deepseek', 'mistral', 'grok', 'xai',
-        'llm', 'large language model', 'generative ai', 'genai', 'neural network', 
-        'prompt injection', 'jailbreak', 'hallucination', 'ai model', 'ai agent', 'ai-assisted'
+    const aiFailKeywords = [
+        'prompt injection', 'jailbreak', 'hallucination', 'ai error', 
+        'ai failure', 'security flaw', 'malicious ai', 'deepfake scam'
     ];
-    let isAI = aiKeywords.some(keyword => titleLower.includes(keyword));
+    let isAIFail = aiFailKeywords.some(keyword => titleLower.includes(keyword));
 
-    const humanKeywords = [
+    const humanFailKeywords = [
         'human error', 'misconfiguration', 'negligence', 
         'phishing', 'social engineering', 'credential theft', 
-        'replaced by ai', 'job loss', 'layoffs', 'scam', 'man', 'guilty', 'extortion', 'pleads', 'fraud', 'arrested'
+        'replaced by ai', 'job loss', 'layoffs', 'scam', 'guilty', 'extortion', 'pleads', 'fraud', 'arrested'
     ];
-    let isHuman = humanKeywords.some(keyword => titleLower.includes(keyword));
+    let isHumanFail = humanFailKeywords.some(keyword => titleLower.includes(keyword));
 
-
-    let shadowIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
-    shadowIcon.scale.set(app.renderer.height * 0.00008);
-    shadowIcon.alpha = 0.55;
-    shadowIcon.anchor.set(0.5);
-    shadowIcon.position.set(0, 0);
-
-    let shadowStatusObj = new PIXI.Text(isAI ? " ❌ " : " ✔ ", { 
-        fontSize: Math.max(14, Math.floor(app.renderer.height * 0.022)), 
-        fill: isAI ? "#ff0000" : "#28a745" 
-    });
-    shadowStatusObj.anchor.set(0, 0.5);
-    shadowStatusObj.position.set(22, 0);
-
-
-    let dinoIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
-    dinoIcon.scale.set(app.renderer.height * 0.00008);
-    dinoIcon.anchor.set(0.5);
-    dinoIcon.position.set(65, 0);
-
-    let dinoStatusObj = new PIXI.Text(isHuman ? " ❌ " : " ✔ ", { 
-        fontSize: Math.max(14, Math.floor(app.renderer.height * 0.022)), 
-        fill: isHuman ? "#ff0000" : "#28a745" 
-    });
-    dinoStatusObj.anchor.set(0, 0.5);
-    dinoStatusObj.position.set(87, 0);
-
+    let showShadow = !isAIFail;
+    let showHuman = !isHumanFail;
 
     let newsStyle = new PIXI.TextStyle({
         fill: "#2D4A27",
@@ -212,12 +185,19 @@ function addNewNewsLine(text, url) {
         dropShadowBlur: 2,
         dropShadowDistance: 2,
         wordWrap: true,
-        wordWrapWidth: app.renderer.width * 0.8
+        wordWrapWidth: app.renderer.width * 0.75
     });
 
     let lineObj = new PIXI.Text("", newsStyle);
-    lineObj.anchor.set(0, 0.5);
-    lineObj.position.set(120, 0);
+    lineObj.anchor.set(0, 0);
+    lineObj.position.set(0, 0);
+    rowContainer.addChild(lineObj);
+
+    
+    let iconScale = (dynamicFontSize / 35); 
+
+    let iconsContainer = new PIXI.Container();
+    rowContainer.addChild(iconsContainer);
 
     let charIndex = 0;
     let speedInterval = Math.max(15, Math.floor(1500 / cleanText.length));
@@ -225,16 +205,45 @@ function addNewNewsLine(text, url) {
         if (charIndex < cleanText.length) {
             lineObj.text += cleanText.charAt(charIndex);
             charIndex++;
+
+          
+            updateIconsPosition();
         } else {
             clearInterval(typingTimer);
         }
     }, speedInterval);
 
-    rowContainer.addChild(shadowIcon);
-    rowContainer.addChild(shadowStatusObj);
-    rowContainer.addChild(dinoIcon);
-    rowContainer.addChild(dinoStatusObj);
-    rowContainer.addChild(lineObj);
+    function updateIconsPosition() {
+        iconsContainer.removeChildren();
+        
+        
+        let metrics = PIXI.TextMetrics.measureText(lineObj.text, newsStyle);
+        let lastLineWidth = metrics.lineWidths.length > 0 ? metrics.lineWidths[metrics.lineWidths.length - 1] : 0;
+        let lineCount = metrics.lines.length;
+
+        let startX = lastLineWidth + 8; 
+        let startY = (lineCount - 1) * metrics.lineHeight + (metrics.lineHeight / 2); 
+
+        let currentX = startX;
+
+        if (showShadow) {
+            let shadowIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
+            shadowIcon.scale.set(iconScale);
+            shadowIcon.alpha = 0.55;
+            shadowIcon.anchor.set(0, 0.5);
+            shadowIcon.position.set(currentX, startY);
+            iconsContainer.addChild(shadowIcon);
+            currentX += dynamicFontSize * 0.9;
+        }
+
+        if (showHuman) {
+            let dinoIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
+            dinoIcon.scale.set(iconScale);
+            dinoIcon.anchor.set(0, 0.5);
+            dinoIcon.position.set(currentX, startY);
+            iconsContainer.addChild(dinoIcon);
+        }
+    }
 
     currentActiveNewsUrl = url;
 
