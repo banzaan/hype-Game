@@ -176,13 +176,13 @@ function addNewNewsLine(text, url) {
 
 
     let shadowIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
-    shadowIcon.scale.set(0.06);
+    shadowIcon.scale.set(app.renderer.height * 0.00008);
     shadowIcon.alpha = 0.55;
     shadowIcon.anchor.set(0.5);
     shadowIcon.position.set(0, 0);
 
-    let shadowStatusObj = new PIXI.Text(isAI ? "❌" : "✔", { 
-        fontSize: 20, 
+    let shadowStatusObj = new PIXI.Text(isAI ? " ❌ " : " ✔ ", { 
+        fontSize: Math.max(14, Math.floor(app.renderer.height * 0.022)), 
         fill: isAI ? "#ff0000" : "#28a745" 
     });
     shadowStatusObj.anchor.set(0, 0.5);
@@ -190,12 +190,12 @@ function addNewNewsLine(text, url) {
 
 
     let dinoIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
-    dinoIcon.scale.set(0.06);
+    dinoIcon.scale.set(app.renderer.height * 0.00008);
     dinoIcon.anchor.set(0.5);
     dinoIcon.position.set(65, 0);
 
-    let dinoStatusObj = new PIXI.Text(isHuman ? "❌" : "✔", { 
-        fontSize: 20, 
+    let dinoStatusObj = new PIXI.Text(isHuman ? " ❌ " : " ✔ ", { 
+        fontSize: Math.max(14, Math.floor(app.renderer.height * 0.022)), 
         fill: isHuman ? "#ff0000" : "#28a745" 
     });
     dinoStatusObj.anchor.set(0, 0.5);
