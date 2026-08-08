@@ -17,6 +17,12 @@ let dist;
 let restarting = false;
 
 
+let maxScoreDino = 0;
+let maxScoreShadow = 0;
+let highScoreDinoText;
+let highScoreShadowText;
+
+
 let newsContainer;
 let activeNewsLines = []; 
 const MAX_NEWS_LINES = 5;
@@ -25,7 +31,6 @@ let currentActiveNewsUrl = "";
 
 let pastRecords = []; 
 let activeSkeletons = []; 
-let shadowDiedThisRun = false; 
 
 const TICK_RATE = 16;
 let lastUpdate = 0;
@@ -84,7 +89,6 @@ function closeLoader() {
 function setup() {
     speed = 3;
     dist = 0;
-    shadowDiedThisRun = false;
     sheet = PIXI.loader.resources["assets/SpriteSheet.json"].spritesheet;
     scroller = new Scroller();
     obstacle = new ObstacleManager();
@@ -95,6 +99,18 @@ function setup() {
     score.position.set(app.renderer.width - 20, 10);
     app.stage.addChildAt(score, app.stage.children.length);
 
+    let recordStyleDino = new PIXI.TextStyle({ fill: "#ffffff", fontSize: 20, fontFamily: "Fredoka One" });
+    highScoreDinoText = new PIXI.Text("Dino Best: 0$", recordStyleDino);
+    highScoreDinoText.anchor.set(1, 0);
+    highScoreDinoText.position.set(app.renderer.width - 20, 70);
+    app.stage.addChild(highScoreDinoText);
+
+    let recordStyleShadow = new PIXI.TextStyle({ fill: "#ffffff", fontSize: 20, fontFamily: "Fredoka One" });
+    highScoreShadowText = new PIXI.Text("Shadow Best: 0$", recordStyleShadow);
+    highScoreShadowText.anchor.set(1, 0);
+    highScoreShadowText.position.set(app.renderer.width - 20, 95);
+    highScoreShadowText.alpha = 0.5;
+    app.stage.addChild(highScoreShadowText);
 
     newsContainer = new PIXI.Container();
     newsContainer.position.set(app.renderer.width / 2, app.renderer.height / 2 - 50);
@@ -138,19 +154,6 @@ function setup() {
     app.ticker.add(delta => gameLoop(delta));
 }
 
-
-function evaluateAndSaveRecord() {
-    let currentScore = Math.floor(dist);
-    if (currentScore > 10) {
-        let maxExisting = pastRecords.length > 0 ? Math.max(...pastRecords.map(r => r.score)) : 0;
-        
-        if (currentScore > maxExisting) {
-            pastRecords.push({ score: currentScore, shown: false });
-        }
-    }
-}
-
-
 function addNewNewsLine(text, url) {
     let cleanText = text.replace(/^[⚠️\s-•]+/, "").trim();
     let dynamicFontSize = Math.max(12, Math.floor(app.renderer.height * 0.022));
@@ -159,45 +162,62 @@ function addNewNewsLine(text, url) {
 
     const titleLower = cleanText.toLowerCase();
     
-    const aiFailKeywords = [
-        'prompt injection', 'jailbreak', 'hallucination', 'ai error', 
-        'ai failure', 'security flaw', 'malicious ai', 'deepfake scam'
+    const aiKeywords = [
+        'chatgpt', 'openai', 'gemini', 'claude', 'anthropic', 'llama', 'meta ai', 
+        'copilot', 'midjourney', 'stable diffusion', 'deepseek', 'mistral', 'grok', 'xai',
+        'llm', 'large language model', 'generative ai', 'genai', 'neural network', 
+        'prompt injection', 'jailbreak', 'hallucination', 'ai model', 'ai agent', 'ai-assisted'
     ];
-    let isAIFail = aiFailKeywords.some(keyword => titleLower.includes(keyword));
+    let isAI = aiKeywords.some(keyword => titleLower.includes(keyword));
 
-    const humanFailKeywords = [
+    const humanKeywords = [
         'human error', 'misconfiguration', 'negligence', 
         'phishing', 'social engineering', 'credential theft', 
-        'replaced by ai', 'job loss', 'layoffs', 'scam', 'guilty', 'extortion', 'pleads', 'fraud', 'arrested'
+        'replaced by ai', 'job loss', 'layoffs', 'scam', 'man', 'guilty', 'extortion', 'pleads', 'fraud', 'arrested'
     ];
-    let isHumanFail = humanFailKeywords.some(keyword => titleLower.includes(keyword));
+    let isHuman = humanKeywords.some(keyword => titleLower.includes(keyword));
 
-    let showShadow = !isAIFail;
-    let showHuman = !isHumanFail;
+    let shadowIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
+    shadowIcon.scale.set(0.06);
+    shadowIcon.alpha = 0.55;
+    shadowIcon.anchor.set(0.5);
+    shadowIcon.position.set(0, 0);
+
+    let shadowStatusObj = new PIXI.Text(isAI ? "❌" : "✔", { 
+        fontSize: 20, 
+        fill: isAI ? "#ff0000" : "#28a745" 
+    });
+    shadowStatusObj.anchor.set(0, 0.5);
+    shadowStatusObj.position.set(22, 0);
+
+    let dinoIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
+    dinoIcon.scale.set(0.06);
+    dinoIcon.anchor.set(0.5);
+    dinoIcon.position.set(65, 0);
+
+    let dinoStatusObj = new PIXI.Text(isHuman ? "❌" : "✔", { 
+        fontSize: 20, 
+        fill: isHuman ? "#ff0000" : "#28a745" 
+    });
+    dinoStatusObj.anchor.set(0, 0.5);
+    dinoStatusObj.position.set(87, 0);
 
     let newsStyle = new PIXI.TextStyle({
         fill: "#2D4A27",
         fontSize: dynamicFontSize,
-        fontFamily: "Fredoka One",
+        fontFamily: "Plus Jakarta Sans",
         align: "left",
         dropShadow: true,
         dropShadowColor: "#ffd4e3",
         dropShadowBlur: 2,
         dropShadowDistance: 2,
         wordWrap: true,
-        wordWrapWidth: app.renderer.width * 0.75
+        wordWrapWidth: app.renderer.width * 0.78
     });
 
     let lineObj = new PIXI.Text("", newsStyle);
-    lineObj.anchor.set(0, 0);
-    lineObj.position.set(0, 0);
-    rowContainer.addChild(lineObj);
-
-    
-    let iconScale = (dynamicFontSize / 350); 
-
-    let iconsContainer = new PIXI.Container();
-    rowContainer.addChild(iconsContainer);
+    lineObj.anchor.set(0, 0.5);
+    lineObj.position.set(120, 0);
 
     let charIndex = 0;
     let speedInterval = Math.max(15, Math.floor(1500 / cleanText.length));
@@ -205,45 +225,16 @@ function addNewNewsLine(text, url) {
         if (charIndex < cleanText.length) {
             lineObj.text += cleanText.charAt(charIndex);
             charIndex++;
-
-          
-            updateIconsPosition();
         } else {
             clearInterval(typingTimer);
         }
     }, speedInterval);
 
-    function updateIconsPosition() {
-        iconsContainer.removeChildren();
-        
-        
-        let metrics = PIXI.TextMetrics.measureText(lineObj.text, newsStyle);
-        let lastLineWidth = metrics.lineWidths.length > 0 ? metrics.lineWidths[metrics.lineWidths.length - 1] : 0;
-        let lineCount = metrics.lines.length;
-
-        let startX = lastLineWidth + 8; 
-        let startY = (lineCount - 1) * metrics.lineHeight + (metrics.lineHeight / 2); 
-
-        let currentX = startX;
-
-        if (showShadow) {
-            let shadowIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
-            shadowIcon.scale.set(iconScale);
-            shadowIcon.alpha = 0.55;
-            shadowIcon.anchor.set(0, 0.5);
-            shadowIcon.position.set(currentX, startY);
-            iconsContainer.addChild(shadowIcon);
-            currentX += dynamicFontSize * 0.9;
-        }
-
-        if (showHuman) {
-            let dinoIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
-            dinoIcon.scale.set(iconScale);
-            dinoIcon.anchor.set(0, 0.5);
-            dinoIcon.position.set(currentX, startY);
-            iconsContainer.addChild(dinoIcon);
-        }
-    }
+    rowContainer.addChild(shadowIcon);
+    rowContainer.addChild(shadowStatusObj);
+    rowContainer.addChild(dinoIcon);
+    rowContainer.addChild(dinoStatusObj);
+    rowContainer.addChild(lineObj);
 
     currentActiveNewsUrl = url;
 
@@ -295,41 +286,19 @@ function gameLoop(delta) {
     scroller.update();
     dino.checkCollision(obstacle);
 
-    if (!restarting) {
+
+    let isBothDead = dino.dead && (dino.shadowDino ? dino.shadowDead : true);
+
+    if (!restarting && !isBothDead) {
         dist += 0.05 * delta * speed;
         if (Math.floor(dist) % 5 === 0) {
             score.text = Math.floor(dist) + "$ saved";
         }
     }
 
-
-    let shadowIsGone = dino && (!dino.shadowDino || dino.shadowDino.visible === false || dino.shadowDino.dead);
-    if (shadowIsGone && !shadowDiedThisRun) {
-        shadowDiedThisRun = true;
-        evaluateAndSaveRecord();
-
-        if (sheet && sheet.textures["Dino_dead.png"]) {
-            let shadowSkeleton = new PIXI.Sprite(sheet.textures["Dino_dead.png"]);
-            shadowSkeleton.scale.set(0.4); 
-            shadowSkeleton.anchor.set(0.5);
-            
-
-            let posX = (dino.shadowDino && dino.shadowDino.x) ? dino.shadowDino.x : 150;
-            let posY = (dino.shadowDino && dino.shadowDino.y) ? dino.shadowDino.y : (app.renderer.height - 120);
-            
-            shadowSkeleton.position.set(posX, posY);
-            app.stage.addChild(shadowSkeleton);
-            
-
-            activeSkeletons.push(shadowSkeleton);
-        }
-    }
-
-
     for (let i = 0; i < pastRecords.length; i++) {
         let record = pastRecords[i];
-
-        if (!record.shown && Math.floor(dist) >= record.score && !restarting) {
+        if (!record.shown && Math.floor(dist) >= record.score) {
             if (sheet && sheet.textures["Dino_dead.png"]) {
                 let recordSkeleton = new PIXI.Sprite(sheet.textures["Dino_dead.png"]);
                 recordSkeleton.scale.set(0.48);
@@ -338,11 +307,10 @@ function gameLoop(delta) {
                 app.stage.addChild(recordSkeleton);
                 
                 activeSkeletons.push(recordSkeleton);
-                record.shown = true; 
+                record.shown = true;
             }
         }
     }
-
 
     for (let i = activeSkeletons.length - 1; i >= 0; i--) {
         let skel = activeSkeletons[i];
@@ -358,6 +326,18 @@ function gameLoop(delta) {
 
 
     if (dino.dead && !restarting) {
+        let finalScore = Math.floor(dist);
+        if (finalScore > 0) {
+            if (finalScore > maxScoreDino) {
+                maxScoreDino = finalScore;
+                highScoreDinoText.text = "Dino Best: " + maxScoreDino + "$";
+            }
+            if (finalScore > maxScoreShadow) {
+                maxScoreShadow = finalScore;
+                highScoreShadowText.text = "Shadow Best: " + maxScoreShadow + "$";
+            }
+        }
+
         resetBtn.visible = true;
         resetBtn.y = app.renderer.height * 0.65;
         
@@ -375,9 +355,12 @@ function gameLoop(delta) {
 }
 
 function reset() {
-
-    evaluateAndSaveRecord();
-
+    if (dist > 10) {
+        let finalScore = Math.floor(dist);
+        if (!pastRecords.some(r => r.score === finalScore)) {
+            pastRecords.push({ score: finalScore, shown: false });
+        }
+    }
 
     for (let i = 0; i < activeSkeletons.length; i++) {
         if (activeSkeletons[i] && activeSkeletons[i].parent) {
@@ -387,17 +370,14 @@ function reset() {
     }
     activeSkeletons = [];
 
-
     for (let i = 0; i < pastRecords.length; i++) {
         pastRecords[i].shown = false;
     }
 
     restarting = true;
     dist = 0;
-    shadowDiedThisRun = false; 
     resetBtn.visible = false; 
     
-
     for (let i = 0; i < activeNewsLines.length; i++) {
         if (activeNewsLines[i].timer) {
             clearInterval(activeNewsLines[i].timer);
