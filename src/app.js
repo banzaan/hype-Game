@@ -5,6 +5,7 @@ app.renderer.autoResize = true;
 app.renderer.resize(window.innerWidth, window.innerHeight);
 app.view.id = "game-canvas";
 document.body.appendChild(app.view);
+
 let scroller;
 let dino;
 let obstacle;
@@ -14,13 +15,21 @@ let resetBtn;
 let speed;
 let dist;
 let restarting = false;
-let newsTextObj;
-let liveNewsList = []; 
-let typingTimer = null;
-let fullCurrentNewsText = "";
+
+
+let newsContainer;
+let activeNewsLines = []; 
+const MAX_NEWS_LINES = 5;
 let currentActiveNewsUrl = "";
+
+
+let pastRecords = []; 
+let activeSkeletons = []; 
+let shadowDiedThisRun = false; 
+
 const TICK_RATE = 16;
 let lastUpdate = 0;
+
 window.WebFontConfig = {
     google: {
         families: ['Fredoka One']
@@ -75,45 +84,27 @@ function closeLoader() {
 function setup() {
     speed = 3;
     dist = 0;
+    shadowDiedThisRun = false;
     sheet = PIXI.loader.resources["assets/SpriteSheet.json"].spritesheet;
     scroller = new Scroller();
     obstacle = new ObstacleManager();
 
     let style = new PIXI.TextStyle({ fill: "white", fontSize: 50, fontFamily: "Fredoka One" });
-    score = new PIXI.Text(dist + " usdc", style);
+    score = new PIXI.Text(dist + "$ saved", style);
     score.anchor.set(1, 0);
     score.position.set(app.renderer.width - 20, 10);
     app.stage.addChildAt(score, app.stage.children.length);
 
-    let dynamicFontSize = Math.max(20, Math.floor(app.renderer.height * 0.035));
 
-    let newsStyle = new PIXI.TextStyle({
-        fill: "#2D4A27",
-        fontSize: dynamicFontSize,
-        fontFamily: "Fredoka One",
-        align: "center",
-        dropShadow: true,
-        dropShadowColor: "#ffd4e3",
-        dropShadowBlur: 2,
-        dropShadowDistance: 2,
-        wordWrap: true,
-        wordWrapWidth: app.renderer.width * 0.8
-    });
-    
-    newsTextObj = new PIXI.Text("", newsStyle);
-    newsTextObj.anchor.set(0.5, 0.5);
-    newsTextObj.position.set(app.renderer.width / 2, app.renderer.height / 2);
-    newsTextObj.interactive = false;
-    newsTextObj.buttonMode = false;
-    app.stage.addChild(newsTextObj);
-
+    newsContainer = new PIXI.Container();
+    newsContainer.position.set(app.renderer.width / 2, app.renderer.height / 2 - 50);
+    app.stage.addChild(newsContainer);
 
     window.onNewsLoaded = function(items) {
-        liveNewsList = items;
-        if (newsTextObj.text === "" && liveNewsList.length > 0) {
-            let firstNews = liveNewsList[Math.floor(Math.random() * liveNewsList.length)];
+        if (items && items.length > 0 && activeNewsLines.length === 0) {
+            let firstNews = items[Math.floor(Math.random() * items.length)];
             currentActiveNewsUrl = firstNews.url;
-            typeWriterEffect(firstNews.title);
+            addNewNewsLine(firstNews.title, firstNews.url);
         }
     };
 
@@ -125,17 +116,10 @@ function setup() {
     resetBtn.buttonMode = true;
     resetBtn.interactive = true;
     resetBtn.on("pointerdown", reset);
-    resetBtn.on("mouseover", function () {
-        resetBtn.hovering = true;
-    });
-    resetBtn.on("pointerout", function () {
-        resetBtn.hovering = false;
-    });
-    resetBtn.on("mouseout", function () {
-        resetBtn.hovering = false;
-    });
+    resetBtn.on("mouseover", function () { resetBtn.hovering = true; });
+    resetBtn.on("pointerout", function () { resetBtn.hovering = false; });
+    resetBtn.on("mouseout", function () { resetBtn.hovering = false; });
     app.stage.addChildAt(resetBtn, app.stage.children.length);
-
 
     window.addEventListener("pointerdown", (e) => {
         if (dino && dino.shadowDino) {
@@ -154,29 +138,139 @@ function setup() {
     app.ticker.add(delta => gameLoop(delta));
 }
 
-function typeWriterEffect(text) {
-    if (typingTimer) {
-        clearInterval(typingTimer);
-    }
-    fullCurrentNewsText = text;
-    newsTextObj.text = "";
-    let charIndex = 0;
-    let speedInterval = Math.max(20, Math.floor(2000 / text.length));
 
-    typingTimer = setInterval(() => {
-        if (charIndex < text.length) {
-            newsTextObj.text += text.charAt(charIndex);
+function evaluateAndSaveRecord() {
+    let currentScore = Math.floor(dist);
+    if (currentScore > 10) {
+        let maxExisting = pastRecords.length > 0 ? Math.max(...pastRecords.map(r => r.score)) : 0;
+        
+        if (currentScore > maxExisting) {
+            pastRecords.push({ score: currentScore, shown: false });
+        }
+    }
+}
+
+
+function addNewNewsLine(text, url) {
+    let cleanText = text.replace(/^[⚠️\s-•]+/, "").trim();
+    let dynamicFontSize = Math.max(12, Math.floor(app.renderer.height * 0.022));
+
+    let rowContainer = new PIXI.Container();
+
+    const titleLower = cleanText.toLowerCase();
+    
+    const aiKeywords = [
+        'chatgpt', 'openai', 'gemini', 'claude', 'anthropic', 'llama', 'meta ai', 
+        'copilot', 'midjourney', 'stable diffusion', 'deepseek', 'mistral', 'grok', 'xai',
+        'llm', 'large language model', 'generative ai', 'genai', 'neural network', 
+        'prompt injection', 'jailbreak', 'hallucination', 'ai model', 'ai agent', 'ai-assisted'
+    ];
+    let isAI = aiKeywords.some(keyword => titleLower.includes(keyword));
+
+    const humanKeywords = [
+        'human error', 'misconfiguration', 'negligence', 
+        'phishing', 'social engineering', 'credential theft', 
+        'replaced by ai', 'job loss', 'layoffs', 'scam', 'man', 'guilty', 'extortion', 'pleads', 'fraud', 'arrested'
+    ];
+    let isHuman = humanKeywords.some(keyword => titleLower.includes(keyword));
+
+
+    let shadowIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
+    shadowIcon.scale.set(0.06);
+    shadowIcon.alpha = 0.55;
+    shadowIcon.anchor.set(0.5);
+    shadowIcon.position.set(0, 0);
+
+    let shadowStatusObj = new PIXI.Text(isAI ? "❌" : "✔", { 
+        fontSize: 20, 
+        fill: isAI ? "#ff0000" : "#28a745" 
+    });
+    shadowStatusObj.anchor.set(0, 0.5);
+    shadowStatusObj.position.set(22, 0);
+
+
+    let dinoIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
+    dinoIcon.scale.set(0.06);
+    dinoIcon.anchor.set(0.5);
+    dinoIcon.position.set(65, 0);
+
+    let dinoStatusObj = new PIXI.Text(isHuman ? "❌" : "✔", { 
+        fontSize: 20, 
+        fill: isHuman ? "#ff0000" : "#28a745" 
+    });
+    dinoStatusObj.anchor.set(0, 0.5);
+    dinoStatusObj.position.set(87, 0);
+
+
+    let newsStyle = new PIXI.TextStyle({
+        fill: "#2D4A27",
+        fontSize: dynamicFontSize,
+        fontFamily: "Fredoka One",
+        align: "left",
+        dropShadow: true,
+        dropShadowColor: "#ffd4e3",
+        dropShadowBlur: 2,
+        dropShadowDistance: 2,
+        wordWrap: true,
+        wordWrapWidth: app.renderer.width * 0.8
+    });
+
+    let lineObj = new PIXI.Text("", newsStyle);
+    lineObj.anchor.set(0, 0.5);
+    lineObj.position.set(120, 0);
+
+    let charIndex = 0;
+    let speedInterval = Math.max(15, Math.floor(1500 / cleanText.length));
+    let typingTimer = setInterval(() => {
+        if (charIndex < cleanText.length) {
+            lineObj.text += cleanText.charAt(charIndex);
             charIndex++;
         } else {
             clearInterval(typingTimer);
         }
     }, speedInterval);
+
+    rowContainer.addChild(shadowIcon);
+    rowContainer.addChild(shadowStatusObj);
+    rowContainer.addChild(dinoIcon);
+    rowContainer.addChild(dinoStatusObj);
+    rowContainer.addChild(lineObj);
+
+    currentActiveNewsUrl = url;
+
+    rowContainer.interactive = true;
+    rowContainer.buttonMode = true;
+    rowContainer.on("click", () => { if (url) window.open(url, "_blank"); });
+    rowContainer.on("tap", () => { if (url) window.open(url, "_blank"); });
+
+    rowContainer.pivot.x = (app.renderer.width * 0.8) / 2;
+
+    activeNewsLines.push({ obj: rowContainer, url: url, timer: typingTimer });
+    newsContainer.addChild(rowContainer);
+
+    if (activeNewsLines.length > MAX_NEWS_LINES) {
+        let removed = activeNewsLines.shift();
+        if (removed.timer) clearInterval(removed.timer);
+        newsContainer.removeChild(removed.obj);
+        removed.obj.destroy();
+    }
+
+    updateNewsPositions();
 }
 
+function updateNewsPositions() {
+    let lineHeight = Math.max(100, Math.floor(app.renderer.height * 0.08));
+    let startY = - (activeNewsLines.length * lineHeight) / 2;
+
+    for (let i = 0; i < activeNewsLines.length; i++) {
+        activeNewsLines[i].obj.position.set(0, startY + (i * lineHeight));
+        let alphaFactor = (i + 1) / activeNewsLines.length;
+        activeNewsLines[i].obj.alpha = Math.max(0.4, alphaFactor);
+    }
+}
 
 window.triggerNextNews = function(title, url) {
-    currentActiveNewsUrl = url;
-    typeWriterEffect(title);
+    addNewNewsLine(title, url);
 };
 
 function gameLoop(delta) {
@@ -192,33 +286,64 @@ function gameLoop(delta) {
     scroller.update();
     dino.checkCollision(obstacle);
 
-
-    if (dino.dead && !newsTextObj.interactive) {
-        if (typingTimer) clearInterval(typingTimer);
-        if (fullCurrentNewsText !== "") {
-            newsTextObj.text = fullCurrentNewsText; 
-        }
-        newsTextObj.interactive = true;
-        newsTextObj.buttonMode = true;
-        
-        newsTextObj.removeAllListeners();
-        newsTextObj.on("click", () => {
-            if (currentActiveNewsUrl) {
-                window.open(currentActiveNewsUrl, "_blank");
-            }
-        });
-        newsTextObj.on("tap", () => {
-            if (currentActiveNewsUrl) {
-                window.open(currentActiveNewsUrl, "_blank");
-            }
-        });
-    }
-
-
     if (!restarting) {
         dist += 0.05 * delta * speed;
         if (Math.floor(dist) % 5 === 0) {
-            score.text = Math.floor(dist) + " usdc";
+            score.text = Math.floor(dist) + "$ saved";
+        }
+    }
+
+
+    let shadowIsGone = dino && (!dino.shadowDino || dino.shadowDino.visible === false || dino.shadowDino.dead);
+    if (shadowIsGone && !shadowDiedThisRun) {
+        shadowDiedThisRun = true;
+        evaluateAndSaveRecord();
+
+        if (sheet && sheet.textures["Dino_dead.png"]) {
+            let shadowSkeleton = new PIXI.Sprite(sheet.textures["Dino_dead.png"]);
+            shadowSkeleton.scale.set(0.4); 
+            shadowSkeleton.anchor.set(0.5);
+            
+
+            let posX = (dino.shadowDino && dino.shadowDino.x) ? dino.shadowDino.x : 150;
+            let posY = (dino.shadowDino && dino.shadowDino.y) ? dino.shadowDino.y : (app.renderer.height - 120);
+            
+            shadowSkeleton.position.set(posX, posY);
+            app.stage.addChild(shadowSkeleton);
+            
+
+            activeSkeletons.push(shadowSkeleton);
+        }
+    }
+
+
+    for (let i = 0; i < pastRecords.length; i++) {
+        let record = pastRecords[i];
+
+        if (!record.shown && Math.floor(dist) >= record.score && !restarting) {
+            if (sheet && sheet.textures["Dino_dead.png"]) {
+                let recordSkeleton = new PIXI.Sprite(sheet.textures["Dino_dead.png"]);
+                recordSkeleton.scale.set(0.48);
+                recordSkeleton.anchor.set(0.5);
+                recordSkeleton.position.set(app.renderer.width, app.renderer.height - recordSkeleton.height * 1.1);
+                app.stage.addChild(recordSkeleton);
+                
+                activeSkeletons.push(recordSkeleton);
+                record.shown = true; 
+            }
+        }
+    }
+
+
+    for (let i = activeSkeletons.length - 1; i >= 0; i--) {
+        let skel = activeSkeletons[i];
+        if (!restarting) {
+            skel.x -= 5.5 * speed;
+            if (skel.x < -100) {
+                skel.parent.removeChild(skel);
+                skel.destroy();
+                activeSkeletons.splice(i, 1);
+            }
         }
     }
 
@@ -241,17 +366,37 @@ function gameLoop(delta) {
 }
 
 function reset() {
+
+    evaluateAndSaveRecord();
+
+
+    for (let i = 0; i < activeSkeletons.length; i++) {
+        if (activeSkeletons[i] && activeSkeletons[i].parent) {
+            activeSkeletons[i].parent.removeChild(activeSkeletons[i]);
+            activeSkeletons[i].destroy();
+        }
+    }
+    activeSkeletons = [];
+
+
+    for (let i = 0; i < pastRecords.length; i++) {
+        pastRecords[i].shown = false;
+    }
+
     restarting = true;
     dist = 0;
+    shadowDiedThisRun = false; 
     resetBtn.visible = false; 
-    newsTextObj.interactive = false;
-    newsTextObj.buttonMode = false;
     
-    if (liveNewsList.length > 0) {
-        let firstNews = liveNewsList[Math.floor(Math.random() * liveNewsList.length)];
-        currentActiveNewsUrl = firstNews.url;
-        typeWriterEffect(firstNews.title);
+
+    for (let i = 0; i < activeNewsLines.length; i++) {
+        if (activeNewsLines[i].timer) {
+            clearInterval(activeNewsLines[i].timer);
+        }
+        newsContainer.removeChild(activeNewsLines[i].obj);
+        activeNewsLines[i].obj.destroy();
     }
+    activeNewsLines = [];
 }
 
 function lerp(value1, value2, amount) {
