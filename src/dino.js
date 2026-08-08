@@ -149,6 +149,24 @@ class Dino{
 
 
         if(blockJumpHuman) {
+            if(blockJumpHuman) {
+
+                let flashScreen = new PIXI.Graphics();
+                flashScreen.beginFill(0xFF0000, 0.5); 
+                flashScreen.drawRect(0, 0, app.renderer.width, app.renderer.height);
+                flashScreen.endFill();
+                
+
+                app.stage.addChild(flashScreen);
+        
+
+                setTimeout(() => {
+                    app.stage.removeChild(flashScreen);
+                    flashScreen.destroy();
+                }, 150);
+        
+                return; 
+            }
             return; 
         }
 
@@ -228,9 +246,13 @@ class Dino{
 
 
             speed = 3;
-            dist = 0;
-            if (typeof score !== 'undefined') {
-                score.text = "0 usdc";
+            
+
+            if (this.dead) {
+                dist = 0;
+                if (typeof score !== 'undefined') {
+                    score.text = "0 usdc";
+                }
             }
         }
     }
