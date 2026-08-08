@@ -194,7 +194,7 @@ function addNewNewsLine(text, url) {
     rowContainer.addChild(lineObj);
 
     
-    let iconScale = (dynamicFontSize / 35); 
+    let iconScale = (dynamicFontSize / 350); 
 
     let iconsContainer = new PIXI.Container();
     rowContainer.addChild(iconsContainer);
