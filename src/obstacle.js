@@ -20,18 +20,40 @@ class ObstacleManager {
     }
 
     async fetchDynamicNews() {
+        const feedUrls = [
+            'https://thehackernews.com/rss.xml',
+            'https://www.bleepingcomputer.com/feed/',
+            'https://krebsonsecurity.com/feed/',
+            'https://portswigger.net/research/rss',
+            'https://securelist.com/feed/'
+        ];
+
         try {
-            const response = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://thehackernews.com/rss.xml');
-            const data = await response.json();
-            
-            if (data && data.items && data.items.length > 0) {
-                this.newsList = data.items.map(item => ({
-                    title: "⚠️ " + item.title,
-                    url: item.link
-                }));
-            }
+            const promises = feedUrls.map(url => 
+                fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`)
+                    .then(res => res.json())
+                    .catch(err => {
+                        console.log(`Error fetching ${url}:`, err);
+                        return null;
+                    })
+            );
+
+            const results = await Promise.all(promises);
+            let allItems = [];
+
+            results.forEach(data => {
+                if (data && data.items && data.items.length > 0) {
+                    const formattedItems = data.items.map(item => ({
+                        title: "⚠️ " + item.title,
+                        url: item.link
+                    }));
+                    allItems = allItems.concat(formattedItems);
+                }
+            });
+
+            this.newsList = allItems;
         } catch (error) {
-            console.log("Error fetching news:", error);
+            console.log("Error fetching news feeds:", error);
         }
     }
 
@@ -40,14 +62,33 @@ class ObstacleManager {
 
         const cactusGlobalX = this.obstacles.x;
 
-        if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews && !dino.dead) {
+        if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews ) {
             if (this.newsList.length > 0) {
                 const randomNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
+                
+
+                const titleLower = randomNews.title.toLowerCase();
+                const aiKeywords = [
+
+                    'chatgpt', 'openai', 'gemini', 'claude', 'anthropic', 'llama', 'meta ai', 
+                    'copilot', 'midjourney', 'stable diffusion', 'deepseek', 'mistral', 'grok', 'xai',
+                    'llm', 'large language model', 'generative ai', 'genai', 'neural network', 
+                    'prompt injection', 'jailbreak', 'hallucination', 'ai model', 'ai agent', 'ai-assisted'
+                ];
+                window.isAIWeaknessTitle = aiKeywords.some(keyword => titleLower.includes(keyword));
+                const humanFailureKeywords = [
+                    'human error', 'misconfiguration', 'negligence', 
+                    'phishing', 'social engineering', 'credential theft', 
+                    'replaced by ai', 'job loss', 'layoffs', 'scam', 'man', 'guilty', 'extortion', 'pleads', 'fraud', 'arrested'
+                ];
+                
+                window.isHumanFailureTitle = humanFailureKeywords.some(keyword => titleLower.includes(keyword));
                 if (typeof window.triggerNextNews === 'function') {
                     window.triggerNextNews(randomNews.title, randomNews.url);
                 }
             }
             this.hasShownNews = true;
+        
         }
 
         if (this.obstacles.x <= -this.obstacles.width) {
@@ -58,7 +99,9 @@ class ObstacleManager {
             this.obstacles.x = app.renderer.width + speed * 100 + Math.random() * 200 * speed;
             this.obstacles.y = app.renderer.height;
             this.hasShownNews = false; 
-
+            if (typeof dino !== 'undefined' && dino.shadowDead) {
+                dino.reviveShadow();
+            }
             if (restarting) {
                 this.obstacles.x = app.renderer.width * 3;
                 this.hasShownNews = false;
