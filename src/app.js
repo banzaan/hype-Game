@@ -105,12 +105,12 @@ function setup() {
     highScoreDinoText.position.set(app.renderer.width - 20, 70);
     app.stage.addChild(highScoreDinoText);
 
-    let recordStyleShadow = new PIXI.TextStyle({ fill: "#ffffff", fontSize: 20, fontFamily: "Fredoka One" });
+    /*let recordStyleShadow = new PIXI.TextStyle({ fill: "#ffffff", fontSize: 20, fontFamily: "Fredoka One" });
     highScoreShadowText = new PIXI.Text("Shadow Best: 0$", recordStyleShadow);
     highScoreShadowText.anchor.set(1, 0);
     highScoreShadowText.position.set(app.renderer.width - 20, 95);
     highScoreShadowText.alpha = 0.5;
-    app.stage.addChild(highScoreShadowText);
+    app.stage.addChild(highScoreShadowText);*/
 
     newsContainer = new PIXI.Container();
     newsContainer.position.set(app.renderer.width / 2, app.renderer.height / 2 - 50);
@@ -334,7 +334,7 @@ function gameLoop(delta) {
             }
             if (finalScore > maxScoreShadow) {
                 maxScoreShadow = finalScore;
-                highScoreShadowText.text = "Shadow Best: " + maxScoreShadow + "$";
+                //highScoreShadowText.text = "Shadow Best: " + maxScoreShadow + "$";
             }
         }
 
