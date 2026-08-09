@@ -21,22 +21,22 @@ class Dino{
 
         this.dino.animationSpeed = 0.35 * speed / 2;
         this.dino.play();
-        app.stage.addChildAt(this.dino, app.stage.children.length - 5);
+        app.stage.addChildAt(this.dino, app.stage.children.length - 6);
 
         this.shadowDino.animationSpeed = 0.35 * speed / 2;
         this.shadowDino.play();
-        app.stage.addChildAt(this.shadowDino, app.stage.children.length - 5);
+        app.stage.addChildAt(this.shadowDino, app.stage.children.length - 6);
 
         this.dinoDead = new PIXI.Sprite(sheet.textures["Dino_dead.png"]);
         this.dinoDead.scale.set(0.7);
         this.dinoDead.visible = false;
-        app.stage.addChildAt(this.dinoDead, app.stage.children.length - 5);
+        app.stage.addChildAt(this.dinoDead, app.stage.children.length - 6);
 
         this.shadowDinoDead = new PIXI.Sprite(sheet.textures["Dino_dead.png"]);
         this.shadowDinoDead.scale.set(0.7);
         this.shadowDinoDead.alpha = 0.55;
         this.shadowDinoDead.visible = false;
-        app.stage.addChildAt(this.shadowDinoDead, app.stage.children.length - 5);
+        app.stage.addChildAt(this.shadowDinoDead, app.stage.children.length - 6);
 
         this.vy = 0;
         this.vx = 0;
@@ -163,7 +163,7 @@ class Dino{
                 setTimeout(() => {
                     app.stage.removeChild(flashScreen);
                     flashScreen.destroy();
-                }, 350);
+                }, 300);
         
                 return; 
             }
@@ -242,7 +242,7 @@ class Dino{
             this.shadowDino.position.set(app.renderer.width * -0.3, app.renderer.height - this.shadowDino.height * 1.1);
             this.shadowDino.animationSpeed = 0.35 * speed / 2;
             this.shadowDino.play();
-            app.stage.addChildAt(this.shadowDino, app.stage.children.length - 5);
+            app.stage.addChildAt(this.shadowDino, app.stage.children.length - 6);
 
 
             speed = 3;
