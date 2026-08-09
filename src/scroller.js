@@ -16,7 +16,6 @@ class Scroller{
       this.clouds.children[i].anchor.set(0.5);
       this.clouds.children[i].scale.set(Math.random() * (0.65 - 0.4) + 0.4);
       this.clouds.children[i].vx = 1;
-      //this.clouds[i].vx = Math.random() * (2 - 1) + 1;
     }
 
     for(let i = 0; i < 4; i++){
@@ -49,11 +48,23 @@ class Scroller{
     app.stage.addChild(this.dunesB);
     app.stage.addChild(this.dunesF);
     app.stage.addChild(this.sandB);
-    app.stage.addChild(this.decorations);
+  
     app.stage.addChild(this.sandF);
+    app.stage.addChild(this.decorations);
+
+
+    setInterval(() => {
+      if (this.sandF && this.sandF.width) {
+        this.sandF.tilePosition.x %= this.sandF.width;
+        this.sandB.tilePosition.x %= this.sandB.width;
+        this.dunesF.tilePosition.x %= this.dunesF.width;
+        this.dunesB.tilePosition.x %= this.dunesB.width;
+      }
+    }, 120000);
   }
 
   update(){
+
     this.sandF.tilePosition.x -= 6.5 * speed;
     this.sandB.tilePosition.x -= 3 * speed;
     this.dunesF.tilePosition.x -= 1 * speed;
