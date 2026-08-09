@@ -49,8 +49,8 @@ class Scroller{
     app.stage.addChild(this.dunesB);
     app.stage.addChild(this.dunesF);
     app.stage.addChild(this.sandB);
-    app.stage.addChild(this.sandF);
     app.stage.addChild(this.decorations);
+    app.stage.addChild(this.sandF);
   }
 
   update(){
