@@ -163,7 +163,7 @@ class Dino{
                 setTimeout(() => {
                     app.stage.removeChild(flashScreen);
                     flashScreen.destroy();
-                }, 150);
+                }, 350);
         
                 return; 
             }
