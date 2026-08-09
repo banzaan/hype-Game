@@ -60,7 +60,7 @@ class Scroller{
         this.dunesF.tilePosition.x %= this.dunesF.width;
         this.dunesB.tilePosition.x %= this.dunesB.width;
       }
-    }, 120000);
+    }, 60000);
   }
 
   update(){
