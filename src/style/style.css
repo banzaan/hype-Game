@@ -2,3 +2,57 @@
   margin: 0;
   padding: 0;
 }
+#custom-game-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #2D4A27; 
+  border: 4px solid #ffd4e3;
+  border-radius: 16px;
+  padding: 25px 35px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  z-index: 10000;
+  font-family: 'Fredoka One', cursive, sans-serif;
+  text-align: center;
+  color: #ffffff;
+  max-width: 400px;
+  width: 85%;
+}
+
+#custom-game-modal p {
+  font-size: 20px;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+#custom-game-modal .modal-btns {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+#custom-game-modal button {
+  font-family: 'Fredoka One', cursive, sans-serif;
+  font-size: 18px;
+  padding: 10px 25px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+#custom-game-modal button:active {
+  transform: scale(0.95);
+}
+
+#custom-modal-yes {
+  background-color: #ff4757; 
+  color: white;
+}
+
+#custom-modal-no {
+  background-color: #2ed573; 
+  color: white;
+}
