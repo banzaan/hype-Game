@@ -1,12 +1,19 @@
 {
-    "name": "hype-game",
-    "private": true,
-    "version": "1.0.0",
-    "description": "T-Rex Runner Game",
-    "scripts": {
-      "start": "npx serve ."
-    },
-    "dependencies": {
-      "serve": "^14.2.1"
-    }
+  "name": "hype-game",
+  "private": true,
+  "version": "1.0.0",
+  "description": "T-Rex Runner Game with AI News",
+  "scripts": {
+    "server": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@google/genai": "latest",
+    "concurrently": "^8.2.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3",
+    "serve": "^14.2.1"
   }
+}
