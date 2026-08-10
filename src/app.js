@@ -15,19 +15,17 @@ let resetBtn;
 let speed;
 let dist;
 let restarting = false;
-
+let isGamePaused = false;
 
 let maxScoreDino = 0;
 let maxScoreShadow = 0;
 let highScoreDinoText;
 let highScoreShadowText;
 
-
 let newsContainer;
 let activeNewsLines = []; 
 const MAX_NEWS_LINES = 5;
 let currentActiveNewsUrl = "";
-
 
 let pastRecords = []; 
 let activeSkeletons = []; 
@@ -69,7 +67,34 @@ function loadProgressHandler(loader, resource) {
         document.getElementById("shine").style.left = "120%";
     }
 }
+function showCustomConfirm(questionText) {
+    return new Promise((resolve) => {
+        let modal = document.getElementById('custom-game-modal');
+        let textElem = document.getElementById('custom-modal-text');
+        let yesBtn = document.getElementById('custom-modal-yes');
+        let noBtn = document.getElementById('custom-modal-no');
 
+        textElem.innerText = questionText;
+        modal.style.display = 'block';
+
+
+        let newYes = yesBtn.cloneNode(true);
+        let newNo = noBtn.cloneNode(true);
+        yesBtn.parentNode.replaceChild(newYes, yesBtn);
+        noBtn.parentNode.replaceChild(newNo, noBtn);
+
+        document.getElementById('custom-modal-yes').addEventListener('click', () => {
+            modal.style.display = 'none';
+            resolve(true); 
+        });
+
+
+        document.getElementById('custom-modal-no').addEventListener('click', () => {
+            modal.style.display = 'none';
+            resolve(false); 
+        });
+    });
+}
 function closeLoader() {
     setTimeout(function () {
         let parent = document.getElementById("loader");
@@ -91,6 +116,10 @@ function setup() {
     dist = 0;
     sheet = PIXI.loader.resources["assets/SpriteSheet.json"].spritesheet;
     scroller = new Scroller();
+    
+
+    fetchGameNewsFromBackend();
+
     obstacle = new ObstacleManager();
 
     let style = new PIXI.TextStyle({ fill: "white", fontSize: 50, fontFamily: "Fredoka One" });
@@ -105,24 +134,9 @@ function setup() {
     highScoreDinoText.position.set(app.renderer.width - 20, 70);
     app.stage.addChild(highScoreDinoText);
 
-    /*let recordStyleShadow = new PIXI.TextStyle({ fill: "#ffffff", fontSize: 20, fontFamily: "Fredoka One" });
-    highScoreShadowText = new PIXI.Text("Shadow Best: 0$", recordStyleShadow);
-    highScoreShadowText.anchor.set(1, 0);
-    highScoreShadowText.position.set(app.renderer.width - 20, 95);
-    highScoreShadowText.alpha = 0.5;
-    app.stage.addChild(highScoreShadowText);*/
-
     newsContainer = new PIXI.Container();
     newsContainer.position.set(app.renderer.width / 2, app.renderer.height / 2 - 50);
     app.stage.addChild(newsContainer);
-
-    window.onNewsLoaded = function(items) {
-        if (items && items.length > 0 && activeNewsLines.length === 0) {
-            let firstNews = items[Math.floor(Math.random() * items.length)];
-            currentActiveNewsUrl = firstNews.url;
-            addNewNewsLine(firstNews.title, firstNews.url);
-        }
-    };
 
     resetBtn = new PIXI.Sprite(sheet.textures["retry.png"]);
     resetBtn.scale.set(0.25);
@@ -154,28 +168,34 @@ function setup() {
     app.ticker.add(delta => gameLoop(delta));
 }
 
-function addNewNewsLine(text, url) {
-    let cleanText = text.replace(/^[⚠️\s-•]+/, "").trim();
+
+async function fetchGameNewsFromBackend() {
+    try {
+        let response = await fetch('/api/news');
+        let items = await response.json();
+        if (items && items.length > 0) {
+            window.backendNewsList = items; 
+            console.log("News cached successfully:", items.length);
+            
+
+            let firstNews = items[Math.floor(Math.random() * items.length)];
+            addNewNewsLine(firstNews);
+        }
+    } catch (e) {
+        console.log("Error fetching news from backend:", e);
+    }
+}
+
+function addNewNewsLine(newsObj) {
+    if (!newsObj || !newsObj.title) return;
+    
+    let cleanText = newsObj.title.replace(/^[⚠️\s-•]+/, "").trim();
     let dynamicFontSize = Math.max(12, Math.floor(app.renderer.height * 0.022));
 
     let rowContainer = new PIXI.Container();
 
-    const titleLower = cleanText.toLowerCase();
-    
-    const aiKeywords = [
-        'chatgpt', 'openai', 'gemini', 'claude', 'anthropic', 'llama', 'meta ai', 
-        'copilot', 'midjourney', 'stable diffusion', 'deepseek', 'mistral', 'grok', 'xai',
-        'llm', 'large language model', 'generative ai', 'genai', 'neural network', 
-        'prompt injection', 'jailbreak', 'hallucination', 'ai model', 'ai agent', 'ai-assisted'
-    ];
-    let isAI = aiKeywords.some(keyword => titleLower.includes(keyword));
-
-    const humanKeywords = [
-        'human error', 'misconfiguration', 'negligence', 
-        'phishing', 'social engineering', 'credential theft', 
-        'replaced by ai', 'job loss', 'layoffs', 'scam', 'man', 'guilty', 'extortion', 'pleads', 'fraud', 'arrested'
-    ];
-    let isHuman = humanKeywords.some(keyword => titleLower.includes(keyword));
+    let isAI = newsObj.isAI;
+    let isHuman = newsObj.isHuman;
 
     let shadowIcon = new PIXI.Sprite(sheet.animations["Dino"][0]);
     shadowIcon.scale.set(0.06);
@@ -236,16 +256,16 @@ function addNewNewsLine(text, url) {
     rowContainer.addChild(dinoStatusObj);
     rowContainer.addChild(lineObj);
 
-    currentActiveNewsUrl = url;
+    currentActiveNewsUrl = newsObj.url;
 
     rowContainer.interactive = true;
     rowContainer.buttonMode = true;
-    rowContainer.on("click", () => { if (url) window.open(url, "_blank"); });
-    rowContainer.on("tap", () => { if (url) window.open(url, "_blank"); });
+    rowContainer.on("click", () => { if (newsObj.url) window.open(newsObj.url, "_blank"); });
+    rowContainer.on("tap", () => { if (newsObj.url) window.open(newsObj.url, "_blank"); });
 
     rowContainer.pivot.x = (app.renderer.width * 0.8) / 2;
 
-    activeNewsLines.push({ obj: rowContainer, url: url, timer: typingTimer });
+    activeNewsLines.push({ obj: rowContainer, url: newsObj.url, timer: typingTimer });
     newsContainer.addChild(rowContainer);
 
     if (activeNewsLines.length > MAX_NEWS_LINES) {
@@ -256,6 +276,34 @@ function addNewNewsLine(text, url) {
     }
 
     updateNewsPositions();
+
+
+    if (isHuman && newsObj.question) {
+        setTimeout(async() => {
+            if (dino && dino.dead) {
+                return; 
+            }
+            isGamePaused = true;
+            window.isWaitingForQuestion = true;
+            if (dino) dino.pause();
+            let userResponse = await showCustomConfirm(newsObj.question);
+            window.isWaitingForQuestion = false;
+            isGamePaused = false;
+            if (dino) dino.resume();
+            if (userResponse) {
+
+                if (dino) {
+                    dino.isDoom = true; 
+                }
+            } else {
+                
+                if (dino) {
+                    dino.autoJumpRequested = true;
+                    dino.isWaitingForAutoJump = true;
+                }
+            }
+        }, 1); 
+    }
 }
 
 function updateNewsPositions() {
@@ -269,11 +317,12 @@ function updateNewsPositions() {
     }
 }
 
-window.triggerNextNews = function(title, url) {
-    addNewNewsLine(title, url);
+window.triggerNextNews = function(newsObj) {
+    addNewNewsLine(newsObj);
 };
 
 function gameLoop(delta) {
+    if (isGamePaused) return;
     let now = (new Date()).getTime();
     let timeDiff = now - lastUpdate;
     if (timeDiff < TICK_RATE)
@@ -285,7 +334,6 @@ function gameLoop(delta) {
     obstacle.update();
     scroller.update();
     dino.checkCollision(obstacle);
-
 
     let isBothDead = dino.dead && (dino.shadowDino ? dino.shadowDead : true);
 
@@ -324,17 +372,12 @@ function gameLoop(delta) {
         }
     }
 
-
     if (dino.dead && !restarting) {
         let finalScore = Math.floor(dist);
         if (finalScore > 0) {
             if (finalScore > maxScoreDino) {
                 maxScoreDino = finalScore;
                 highScoreDinoText.text = "Dino Best: " + maxScoreDino + "$";
-            }
-            if (finalScore > maxScoreShadow) {
-                maxScoreShadow = finalScore;
-                //highScoreShadowText.text = "Shadow Best: " + maxScoreShadow + "$";
             }
         }
 
@@ -355,6 +398,9 @@ function gameLoop(delta) {
 }
 
 function reset() {
+    if (dino && dino.shadowAirborn) {
+        return; 
+    }
     if (dist > 10) {
         let finalScore = Math.floor(dist);
         if (!pastRecords.some(r => r.score === finalScore)) {
