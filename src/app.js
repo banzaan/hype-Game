@@ -171,7 +171,7 @@ function setup() {
 
 async function fetchGameNewsFromBackend() {
     try {
-        let response = await fetch('https://45.39.230.39:3000/api/news');
+        let response = await fetch('https://bandino.duckdns.org/api/news');
         let items = await response.json();
         if (items && items.length > 0) {
             window.backendNewsList = items; 
