@@ -21,7 +21,7 @@ class ObstacleManager {
 
     async fetchNewsFromBackend() {
         try {
-            const response = await fetch('https://45.39.230.39:3000/api/news');
+            const response = await fetch('https://bandino.duckdns.org/api/news');
             const data = await response.json();
             if (data && data.length > 0) {
                 this.newsList = data; 
