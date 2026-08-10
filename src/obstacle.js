@@ -16,44 +16,19 @@ class ObstacleManager {
         this.obstacles.x = app.renderer.width * 3;
         app.stage.addChildAt(this.obstacles, app.stage.children.length - 2);
 
-        this.fetchDynamicNews();
+        this.fetchNewsFromBackend();
     }
 
-    async fetchDynamicNews() {
-        const feedUrls = [
-            'https://thehackernews.com/rss.xml',
-            'https://www.bleepingcomputer.com/feed/',
-            'https://krebsonsecurity.com/feed/',
-            'https://portswigger.net/research/rss',
-            'https://securelist.com/feed/'
-        ];
-
+    async fetchNewsFromBackend() {
         try {
-            const promises = feedUrls.map(url => 
-                fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`)
-                    .then(res => res.json())
-                    .catch(err => {
-                        console.log(`Error fetching ${url}:`, err);
-                        return null;
-                    })
-            );
-
-            const results = await Promise.all(promises);
-            let allItems = [];
-
-            results.forEach(data => {
-                if (data && data.items && data.items.length > 0) {
-                    const formattedItems = data.items.map(item => ({
-                        title: "⚠️ " + item.title,
-                        url: item.link
-                    }));
-                    allItems = allItems.concat(formattedItems);
-                }
-            });
-
-            this.newsList = allItems;
+            const response = await fetch('/api/news');
+            const data = await response.json();
+            if (data && data.length > 0) {
+                this.newsList = data; 
+                console.log("News loaded successfully in ObstacleManager:", this.newsList.length);
+            }
         } catch (error) {
-            console.log("Error fetching news feeds:", error);
+            console.log("Error fetching news from backend:", error);
         }
     }
 
@@ -62,33 +37,20 @@ class ObstacleManager {
 
         const cactusGlobalX = this.obstacles.x;
 
-        if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews ) {
+        if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews) {
             if (this.newsList.length > 0) {
-                const randomNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
+                const selectedNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
                 
+                window.isAIWeaknessTitle = selectedNews.isAI;
+                window.isHumanFailureTitle = selectedNews.isHuman;
 
-                const titleLower = randomNews.title.toLowerCase();
-                const aiKeywords = [
-
-                    'chatgpt', 'openai', 'gemini', 'claude', 'anthropic', 'llama', 'meta ai', 
-                    'copilot', 'midjourney', 'stable diffusion', 'deepseek', 'mistral', 'grok', 'xai',
-                    'llm', 'large language model', 'generative ai', 'genai', 'neural network', 
-                    'prompt injection', 'jailbreak', 'hallucination', 'ai model', 'ai agent', 'ai-assisted'
-                ];
-                window.isAIWeaknessTitle = aiKeywords.some(keyword => titleLower.includes(keyword));
-                const humanFailureKeywords = [
-                    'human error', 'misconfiguration', 'negligence', 
-                    'phishing', 'social engineering', 'credential theft', 
-                    'replaced by ai', 'job loss', 'layoffs', 'scam', 'man', 'guilty', 'extortion', 'pleads', 'fraud', 'arrested'
-                ];
-                
-                window.isHumanFailureTitle = humanFailureKeywords.some(keyword => titleLower.includes(keyword));
                 if (typeof window.triggerNextNews === 'function') {
-                    window.triggerNextNews(randomNews.title, randomNews.url);
+                    window.triggerNextNews(selectedNews);
                 }
+            } else {
+                this.fetchNewsFromBackend();
             }
             this.hasShownNews = true;
-        
         }
 
         if (this.obstacles.x <= -this.obstacles.width) {
