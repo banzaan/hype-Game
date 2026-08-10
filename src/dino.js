@@ -50,6 +50,17 @@ class Dino{
 
     update(){
         let targetX = app.renderer.width * 0.12;
+        if(this.autoJumpRequested && !this.airborn && !this.dead) {
+            if(typeof obstacle !== 'undefined' && obstacle && obstacle.obstacles) {
+                let obstX = obstacle.obstacles.x;
+                if(obstX > targetX && obstX - targetX < 440) {
+                    this.airborn = true;
+                    this.vy = -26;
+                    this.dino.gotoAndStop(3);
+                    this.autoJumpRequested = false; 
+                }
+            }
+        }
         let shadowX = app.renderer.width * -0.08;
 
         if(this.airborn && !this.dead){
@@ -61,6 +72,9 @@ class Dino{
                 this.vy = 0;
                 this.dino.position.y = app.renderer.height - this.dino.height * 1.1;
                 this.dino.gotoAndPlay(0);
+                if(this.isWaitingForAutoJump) {
+                    this.isWaitingForAutoJump = false;
+                }
             }
         }
 
@@ -144,31 +158,25 @@ class Dino{
     }
 
     jump(){
+        if (typeof window !== 'undefined' && window.isWaitingForQuestion) return;
 
-        let blockJumpHuman = typeof isHumanFailureTitle !== 'undefined' ? isHumanFailureTitle : false;
 
+        if (this.isDoom) {
+            let flashScreen = new PIXI.Graphics();
+            flashScreen.beginFill(0xFF0000, 0.5); 
+            flashScreen.drawRect(0, 0, app.renderer.width, app.renderer.height);
+            flashScreen.endFill();
+            app.stage.addChild(flashScreen);
 
-        if(blockJumpHuman) {
-            if(blockJumpHuman) {
+            setTimeout(() => {
+                app.stage.removeChild(flashScreen);
+                flashScreen.destroy();
+            }, 150);
 
-                let flashScreen = new PIXI.Graphics();
-                flashScreen.beginFill(0xFF0000, 0.5); 
-                flashScreen.drawRect(0, 0, app.renderer.width, app.renderer.height);
-                flashScreen.endFill();
-                
-
-                app.stage.addChild(flashScreen);
-        
-
-                setTimeout(() => {
-                    app.stage.removeChild(flashScreen);
-                    flashScreen.destroy();
-                }, 300);
-        
-                return; 
-            }
             return; 
         }
+
+        if (this.isWaitingForAutoJump) return;
 
         if(!this.airborn && !this.dead){
             this.airborn = true;
@@ -254,6 +262,23 @@ class Dino{
                     score.text = "0 usdc";
                 }
             }
+        }
+    }
+    pause() {
+        if (this.dino && typeof this.dino.stop === 'function') {
+            this.dino.stop();
+        }
+        if (this.shadowDino && typeof this.shadowDino.stop === 'function') {
+            this.shadowDino.stop();
+        }
+    }
+
+    resume() {
+        if (this.dino && typeof this.dino.play === 'function' && !this.dead) {
+            this.dino.play();
+        }
+        if (this.shadowDino && typeof this.shadowDino.play === 'function' && !this.shadowDead) {
+            this.shadowDino.play();
         }
     }
 }
