@@ -6,7 +6,7 @@ const { GoogleGenAI } = require('@google/genai');
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '.')));
+app.use(express.static('.'));
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -97,11 +97,14 @@ async function updateAndAnalyzeNews() {
 }
 
 app.get('/api/news', (req, res) => {
+    if (analyzedNewsCache.length === 0) {
+        await updateAndAnalyzeNews();
+    }
     res.json(analyzedNewsCache);
 });
 
 
-updateAndAnalyzeNews();
+//updateAndAnalyzeNews();
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
