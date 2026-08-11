@@ -283,20 +283,30 @@ function addNewNewsLine(newsObj) {
             if (dino && dino.dead) {
                 return; 
             }
+            
+            
             isGamePaused = true;
             window.isWaitingForQuestion = true;
             if (dino) dino.pause();
-            let userResponse = await showCustomConfirm(newsObj.question);
+            
+            let userResponse;
+             if (window.savedAnswers && window.savedAnswers[newsObj.url] !== undefined) {
+                userResponse = window.savedAnswers[newsObj.url];
+            } else {
+                userResponse = await showCustomConfirm(newsObj.question);
+                if (!window.savedAnswers) window.savedAnswers = {};
+                window.savedAnswers[newsObj.url] = userResponse; 
+            }
+
             window.isWaitingForQuestion = false;
             isGamePaused = false;
             if (dino) dino.resume();
+            
             if (userResponse) {
-
                 if (dino) {
                     dino.isDoom = true; 
                 }
             } else {
-                
                 if (dino) {
                     dino.autoJumpRequested = true;
                     dino.isWaitingForAutoJump = true;
