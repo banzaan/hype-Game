@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/news",
+      "destination": "http://95.182.96.215:3000/api/news"
+    }
+  ]
+}
