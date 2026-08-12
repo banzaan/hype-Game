@@ -171,7 +171,7 @@ function setup() {
 
 async function fetchGameNewsFromBackend() {
     try {
-        let response = await fetch('http://95.182.96.215:3000/api/news');
+        let response = await fetch('/api/news');
         let items = await response.json();
         if (items && items.length > 0) {
             window.backendNewsList = items; 
