@@ -97,7 +97,7 @@ async function updateAndAnalyzeNews() {
     }
 }
 
-app.get('/api/news', (req, res) => {
+app.get('/api/news', async (req, res) => {
     if (analyzedNewsCache.length === 0) {
         await updateAndAnalyzeNews();
     }
