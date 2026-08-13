@@ -48,9 +48,9 @@ async function updateAndAnalyzeNews() {
             
             Based on your analysis, determine:
             1. isAI (boolean): True if this headline indicates a critical failure, weakness, or crisis specifically in an AI model or system. Otherwise false.
-            2. isHuman (boolean): True if this headline indicates a direct human error, configuration mistake, or negligence. Otherwise false.
-            3. projectName (string): Extract the main software, platform, company, or tool name mentioned in the headline. If none, return "General".
-            4. question (string or null): If a specific project name is found, create a short, engaging Yes/No question addressed to the player asking if they have used it, formatted like: "Did you ever work with [projectName]?". If projectName is "General", return null.
+            2. isHuman (Boolean): True if this header indicates direct human error, misconfiguration or negligence, or puts users at risk. False otherwise.
+           3. Project Name (String): Extract the name of the main software, platform, company, or tool mentioned in the title that has a bug, problem, or risk. If none exists, return "General".
+            4. question (string or null): If a specific project name is found, create a short, engaging Yes/No question with project name addressed to the player asking if they have used it. If projectName is "General", return null.
             
             Return ONLY a valid JSON object with format: 
             {
