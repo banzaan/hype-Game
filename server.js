@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
+const fs = require('fs');
+const path = require('path');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
@@ -11,12 +13,23 @@ app.use(express.static('.'));
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-
+const CACHE_FILE = path.join(__dirname, 'news.json');
 let analyzedNewsCache = [];
+
+
+if (fs.existsSync(CACHE_FILE)) {
+    try {
+        const data = fs.readFileSync(CACHE_FILE, 'utf8');
+        analyzedNewsCache = JSON.parse(data);
+        console.log(`📂 Loaded ${analyzedNewsCache.length} news items from local cache.`);
+    } catch (e) {
+        console.log("⚠️ Error reading cache file.");
+    }
+}
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function updateAndAnalyzeNews() {
+async function updateAndAnalyzeNews(isDailyRun = false) {
     console.log("⏳ Fetching and analyzing news with Gemini...");
     
     const feedUrls = [
@@ -32,11 +45,14 @@ async function updateAndAnalyzeNews() {
             const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`);
             const data = await response.json();
             if (data && data.items) {
-                allItems = allItems.concat(data.items.slice(0, 10)); 
+                allItems = allItems.concat(data.items.slice(0, 10));
             }
         }
 
         let freshNews = [];
+        if (isDailyRun) {
+            fs.writeFileSync(CACHE_FILE, JSON.stringify([], null, 2), 'utf8');
+        }
 
         for (let i = 0; i < allItems.length; i++) {
             let item = allItems[i];
@@ -48,8 +64,8 @@ async function updateAndAnalyzeNews() {
             
             Based on your analysis, determine:
             1. isAI (boolean): True if this headline indicates a critical failure, weakness, or crisis specifically in an AI model or system. Otherwise false.
-            2. isHuman (Boolean): True if this header indicates direct human error, misconfiguration or negligence, or puts users at risk. False otherwise.
-           3. Project Name (String): Extract the name of the main software, platform, company, or tool mentioned in the title that has a bug, problem, or risk. If none exists, return "General".
+            2. isHuman (boolean): True if this header indicates direct human error, misconfiguration or negligence, or puts users at risk. False otherwise.
+            3. projectName (string): Extract the name of the main software, platform, company, or tool mentioned in the title that has a bug, problem, or risk. If none exists, return "General".
             4. question (string or null): If a specific project name is found, create a short, engaging Yes/No question with project name addressed to the player asking if they have used it. If projectName is "General", return null.
             
             Return ONLY a valid JSON object with format: 
@@ -79,7 +95,9 @@ async function updateAndAnalyzeNews() {
                 };
 
                 freshNews.push(analyzedItem);
-                analyzedNewsCache = [...freshNews]; 
+                analyzedNewsCache = [...freshNews];
+
+                fs.writeFileSync(CACHE_FILE, JSON.stringify(analyzedNewsCache, null, 2), 'utf8');
 
                 console.log(`Processed item ${i + 1} of ${allItems.length}`);
                 await delay(10000);
@@ -97,15 +115,21 @@ async function updateAndAnalyzeNews() {
     }
 }
 
-app.get('/api/news', async (req, res) => {
-    if (analyzedNewsCache.length === 0) {
-        await updateAndAnalyzeNews();
-    }
+
+app.get('/api/news', (req, res) => {
     res.json(analyzedNewsCache);
 });
 
 
-//updateAndAnalyzeNews();
+cron.schedule('0 0 * * *', () => {
+    updateAndAnalyzeNews(true);
+});
+
+
+if (!fs.existsSync(CACHE_FILE) || analyzedNewsCache.length === 0) {
+    console.log("📂 No cache file found on startup. Generating initial news...");
+    updateAndAnalyzeNews(false);
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
