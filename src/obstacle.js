@@ -1,3 +1,6 @@
+
+let globalNewsIndex = 0;
+
 class ObstacleManager {
     constructor() {
         this.obstacles = new PIXI.Container();
@@ -39,7 +42,11 @@ class ObstacleManager {
 
         if (cactusGlobalX > app.renderer.width - 200 && !this.hasShownNews) {
             if (this.newsList.length > 0) {
-                const selectedNews = this.newsList[Math.floor(Math.random() * this.newsList.length)];
+
+                const selectedNews = this.newsList[globalNewsIndex];
+                
+
+                globalNewsIndex = (globalNewsIndex + 1) % this.newsList.length;
                 
                 window.isAIWeaknessTitle = selectedNews.isAI;
                 window.isHumanFailureTitle = selectedNews.isHuman;
