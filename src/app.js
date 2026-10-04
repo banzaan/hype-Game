@@ -26,6 +26,7 @@ let newsContainer;
 let activeNewsLines = []; 
 const MAX_NEWS_LINES = 5;
 let currentActiveNewsUrl = "";
+let currentNewsIndex = 0; 
 
 let pastRecords = []; 
 let activeSkeletons = []; 
@@ -171,15 +172,16 @@ function setup() {
 
 async function fetchGameNewsFromBackend() {
     try {
-        let response = await fetch('/api/news');
+        let response = await fetch('https://bandino.duckdns.org/api/news');
         let items = await response.json();
         if (items && items.length > 0) {
             window.backendNewsList = items; 
             console.log("News cached successfully:", items.length);
             
-
-            let firstNews = items[Math.floor(Math.random() * items.length)];
-            addNewNewsLine(firstNews);
+            let nextNews = items[currentNewsIndex];
+            addNewNewsLine(nextNews);
+            
+            currentNewsIndex = (currentNewsIndex + 1) % items.length;
         }
     } catch (e) {
         console.log("Error fetching news from backend:", e);
@@ -443,6 +445,7 @@ function reset() {
     }
     activeNewsLines = [];
 }
+
 
 function lerp(value1, value2, amount) {
     amount = amount < 0 ? 0 : amount;
